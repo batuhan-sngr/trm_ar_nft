@@ -138,7 +138,7 @@
   AFRAME.registerComponent('bonfire', {
     init() {
       this.lit = false;
-      this.el.addEventListener('click', () => {
+      const fire = () => {
         if (!this.lit && GameState.phase === 0) {
           this.lit = true;
           this.el.emit('ignite');
@@ -151,7 +151,9 @@
             updateHUD('Scan for the legendary blade...');
           }, 3000);
         }
-      });
+      };
+      this.el.addEventListener('click', fire);
+      this.el.addEventListener('touchstart', fire);
     }
   });
 
@@ -159,7 +161,7 @@
   AFRAME.registerComponent('legendary-sword', {
     init() {
       this.claimed = false;
-      this.el.addEventListener('click', () => {
+      const claim = () => {
         if (!this.claimed && GameState.bonfireLit && GameState.phase === 1) {
           this.claimed = true;
           this.el.emit('claim');
@@ -170,8 +172,12 @@
           setTimeout(() => {
             updateHUD('Scan for the ancient guardian...');
           }, 3000);
+        } else if (!GameState.bonfireLit) {
+          updateHUD('Light the bonfire first...');
         }
-      });
+      };
+      this.el.addEventListener('click', claim);
+      this.el.addEventListener('touchstart', claim);
     }
   });
 
@@ -182,7 +188,7 @@
       this.health = this.data.health;
       this.defeated = false;
       
-      this.el.addEventListener('click', () => {
+      const attack = () => {
         if (!this.defeated && GameState.swordClaimed && GameState.phase === 2) {
           this.health--;
           this.el.emit('damage');
@@ -200,7 +206,10 @@
         } else if (!GameState.swordClaimed) {
           updateHUD('You need a weapon to face this foe...');
         }
-      });
+      };
+      
+      this.el.addEventListener('click', attack);
+      this.el.addEventListener('touchstart', attack);
     }
   });
 
@@ -274,7 +283,13 @@
     vr-mode-ui="enabled: false">
 
     <!-- Cursor for interaction -->
-    <a-entity cursor="rayOrigin: mouse; fuse: false" raycaster="objects: .interactive"></a-entity>
+    <a-entity cursor="rayOrigin: mouse; fuse: true; fuseTimeout: 500" 
+              raycaster="objects: .interactive; far: 100"
+              position="0 0 -1"
+              geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.015"
+              material="color: #d4c5a9; shader: flat; opacity: 0.8"
+              animation__fusing="property: scale; startEvents: fusing; from: 1 1 1; to: 0.5 0.5 0.5; dur: 500"
+              animation__fusecomplete="property: scale; startEvents: click; from: 0.5 0.5 0.5; to: 1 1 1; dur: 150"></a-entity>
 
     <!-- Ambient lighting -->
     <a-entity light="type: ambient; intensity: 0.3; color: #1a1a2e"></a-entity>
