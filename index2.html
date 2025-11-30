@@ -295,8 +295,15 @@
     <a-entity light="type: ambient; intensity: 0.3; color: #1a1a2e"></a-entity>
     <a-entity light="type: directional; intensity: 0.4; color: #d4c5a9" position="2 3 1"></a-entity>
 
-    <!-- MARKER 1: BONFIRE (Testing with Hiro) -->
-    <a-marker preset="hiro" id="marker-bonfire">
+    <!-- MARKER 1: BONFIRE (NFT) -->
+    <a-nft
+      type="nft"
+      url="./Bonfire_Header"
+      smooth="true"
+      smoothCount="10"
+      smoothTolerance="0.01"
+      smoothThreshold="5"
+      id="marker-bonfire">
       <a-entity dark-particles></a-entity>
       
       <!-- Bonfire structure -->
@@ -324,7 +331,7 @@
       <!-- Ground circle -->
       <a-circle position="0 0.01 0" radius="0.8" rotation="-90 0 0" 
                 material="color: #1a1a1a; opacity: 0.5; transparent: true"></a-circle>
-    </a-marker>
+    </a-nft>
 
     <!-- MARKER 2: LEGENDARY SWORD (Kanji) -->
     <a-marker preset="kanji" id="marker-sword">
@@ -369,10 +376,17 @@
                 material="color: #4da6ff; emissive: #4da6ff; emissiveIntensity: 0.8; transparent: true; opacity: 0.6"
                 animation="property: rotation; to: -90 360 0; dur: 20000; loop: true; easing: linear"></a-ring>
       </a-entity>
-    </a-marker>
+    </a-nft>
 
-    <!-- MARKER 3: BOSS GUARDIAN (Testing with Hiro again) -->
-    <a-marker preset="hiro" id="marker-boss">
+    <!-- MARKER 3: BOSS GUARDIAN (NFT) -->
+    <a-nft
+      type="nft"
+      url="./dragon"
+      smooth="true"
+      smoothCount="10"
+      smoothTolerance="0.01"
+      smoothThreshold="5"
+      id="marker-boss">
       <a-entity dark-particles></a-entity>
       
       <!-- Boss entity -->
