@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Dark Souls AR - The Forgotten Path</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+
+  <!-- A-Frame -->
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+  <!-- AR.js for A-Frame (marker-based AR) -->
+  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
+
+  <style>
+    body { margin:0; overflow:hidden; background: #000; }
+
+    .narrative-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.85);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100; pointer-events: none;
+      opacity: 0; transition: opacity 1s ease;
+    }
+    .narrative-overlay.show { opacity: 1; }
+    .narrative-text {
+      max-width: 600px; padding: 40px;
+      font: 400 18px/1.6 'Crimson Text', Georgia, serif;
+      color: #d4c5a9; text-align: center;
+      text-shadow: 0 0 20px rgba(0,0,0,0.8);
+      letter-spacing: 0.5px;
+    }
+
+    .hud {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      font: 600 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color: #d4c5a9; text-align: center;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+      z-index: 10; pointer-events: none;
+      max-width: 90%; padding: 0 20px;
+    }
+    .hud.hidden { display: none; }
+
+    .souls-counter {
+      position: fixed; top: 20px; right: 20px;
+      font: 700 24px/1 'Cinzel', serif;
+      color: #ffd700; text-shadow: 0 0 10px rgba(255,215,0,0.5);
+      z-index: 10; display: none;
+    }
+    .souls-counter.show { display: block; }
+
+    .title-screen {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: radial-gradient(circle, #1a1a1a 0%, #000000 100%);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 200; transition: opacity 1.5s ease;
+    }
+    .title-screen.hide { opacity: 0; pointer-events: none; }
+    .title-screen h1 {
+      font: 700 48px/1.2 'Cinzel', serif;
+      color: #d4c5a9; margin: 0 0 20px 0;
+      text-shadow: 0 0 30px rgba(212,197,169,0.3);
+      letter-spacing: 4px;
+    }
+    .title-screen p {
+      font: 400 16px/1.6 'Crimson Text', Georgia, serif;
+      color: #888; max-width: 500px; text-align: center;
+      padding: 0 20px; margin: 0 0 40px 0;
+    }
+    .start-btn {
+      padding: 15px 40px; border: 2px solid #d4c5a9;
+      background: rgba(0,0,0,0.5); color: #d4c5a9;
+      font: 600 16px/1 'Cinzel', serif;
+      cursor: pointer; transition: all 0.3s ease;
+      letter-spacing: 2px;
+    }
+    .start-btn:hover {
+      background: rgba(212,197,169,0.2);
+      box-shadow: 0 0 20px rgba(212,197,169,0.3);
+    }
+  </style>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Crimson+Text:wght@400;600&display=swap" rel="stylesheet">
+
+  <script>
+  // ---------- Game State Manager ----------
+  const GameState = {
+    phase: 0, // 0=bonfire, 1=sword, 2=boss, 3=ending
+    soulsCollected: 0,
+    bonfireLit: false,
+    swordClaimed: false,
+    bossDefeated: false,
+
+    advance(newPhase) {
+      this.phase = newPhase;
+      this.updateNarrative();
+    },
+
+    updateNarrative() {
+      const narratives = [
+        "In the depths of a forsaken land, a lone bonfire flickers...\n\nTouch the flame to begin your journey.",
+        "The bonfire burns bright. Ahead lies a weapon of legend.\n\nClaim the blade that has felled countless hollows.",
+        "Armed and ablaze, you face the ancient guardian.\n\nOnly by defeating this sentinel can you escape the darkness.",
+        "The hollow falls. The curse is lifted.\n\nYou have kindled the flame of hope in a world of despair."
+      ];
+
+      showNarrative(narratives[this.phase]);
+    },
+
+    collectSoul() {
+      this.soulsCollected++;
+      updateSoulsDisplay();
+    }
+  };
+
+  function showNarrative(text) {
+    const overlay = document.getElementById('narrative');
+    const textEl = document.getElementById('narrative-text');
+    textEl.innerText = text;
+    overlay.classList.add('show');
+    setTimeout(() => overlay.classList.remove('show'), 5000);
+  }
+
+  function updateHUD(text) {
+    const hud = document.getElementById('hud');
+    hud.innerText = text;
+  }
+
+  function updateSoulsDisplay() {
+    const counter = document.getElementById('souls-counter');
+    counter.innerText = `Souls: ${GameState.soulsCollected}`;
+    counter.classList.add('show');
+  }
+
+  // ---------- Interactive Components ----------
+
+  // Bonfire interaction
+  AFRAME.registerComponent('bonfire', {
+    init() {
+      this.lit = false;
+      this.el.addEventListener('click', () => {
+        if (!this.lit && GameState.phase === 0) {
+          this.lit = true;
+          this.el.emit('ignite');
+          GameState.bonfireLit = true;
+          GameState.advance(1);
+          updateHUD('The bonfire is lit. Seek the blade ahead.');
+
+          // Show sword marker hint
+          setTimeout(() => {
+            updateHUD('Scan for the legendary blade...');
+          }, 3000);
+        }
+      });
+    }
+  });
+
+  // Sword interaction
+  AFRAME.registerComponent('legendary-sword', {
+    init() {
+      this.claimed = false;
+      this.el.addEventListener('click', () => {
+        if (!this.claimed && GameState.bonfireLit && GameState.phase === 1) {
+          this.claimed = true;
+          this.el.emit('claim');
+          GameState.swordClaimed = true;
+          GameState.advance(2);
+          updateHUD('Blade in hand. The guardian awaits...');
+
+          setTimeout(() => {
+            updateHUD('Scan for the ancient guardian...');
+          }, 3000);
+        }
+      });
+    }
+  });
+
+  // Boss interaction
+  AFRAME.registerComponent('boss-entity', {
+    schema: { health: {default: 5} },
+    init() {
+      this.health = this.data.health;
+      this.defeated = false;
+
+      this.el.addEventListener('click', () => {
+        if (!this.defeated && GameState.swordClaimed && GameState.phase === 2) {
+          this.health--;
+          this.el.emit('damage');
+          GameState.collectSoul();
+
+          if (this.health <= 0) {
+            this.defeated = true;
+            this.el.emit('defeat');
+            GameState.bossDefeated = true;
+            GameState.advance(3);
+            updateHUD('Victory achieved. The path is clear.');
+          } else {
+            updateHUD(`Guardian weakens... (${this.health} souls remaining)`);
+          }
+        } else if (!GameState.swordClaimed) {
+          updateHUD('You need a weapon to face this foe...');
+        }
+      });
+    }
+  });
+
+  // Ambient particles
+  AFRAME.registerComponent('dark-particles', {
+    init() {
+      const count = 30;
+      for (let i = 0; i < count; i++) {
+        const particle = document.createElement('a-sphere');
+        const x = (Math.random() - 0.5) * 3;
+        const y = Math.random() * 2;
+        const z = (Math.random() - 0.5) * 3;
+        const size = Math.random() * 0.02 + 0.01;
+
+        particle.setAttribute('position', `${x} ${y} ${z}`);
+        particle.setAttribute('radius', size);
+        particle.setAttribute('material', 'color: #444; opacity: 0.3; transparent: true');
+        particle.setAttribute('animation',
+          `property: position; to: ${x} ${y+1} ${z}; dur: ${3000 + Math.random()*2000}; loop: true; dir: alternate; easing: easeInOutSine`);
+
+        this.el.appendChild(particle);
+      }
+    }
+  });
+
+  // Floating animation
+  AFRAME.registerComponent('float', {
+    schema: { speed: {default: 3000}, distance: {default: 0.2} },
+    init() {
+      const pos = this.el.getAttribute('position');
+      this.el.setAttribute('animation__float',
+        `property: position; to: ${pos.x} ${pos.y + this.data.distance} ${pos.z}; dur: ${this.data.speed}; loop: true; dir: alternate; easing: easeInOutSine`);
+    }
+  });
+
+  // Pulse glow
+  AFRAME.registerComponent('pulse-glow', {
+    schema: { color: {default: '#ff6600'}, speed: {default: 2000} },
+    init() {
+      this.el.setAttribute('animation__pulse',
+        `property: components.material.material.emissiveIntensity; from: 0.5; to: 1.5; dur: ${this.data.speed}; loop: true; dir: alternate; easing: easeInOutSine`);
+    }
+  });
+  </script>
+</head>
+<body>
+
+  <!-- Title Screen -->
+  <div class="title-screen" id="title-screen">
+    <h1>THE FORGOTTEN PATH</h1>
+    <p>In a realm consumed by darkness, three markers hold the key to salvation. Light the bonfire. Claim the blade. Defeat the guardian.</p>
+    <button class="start-btn" id="start-btn">BEGIN JOURNEY</button>
+  </div>
+
+  <!-- Narrative Overlay -->
+  <div class="narrative-overlay" id="narrative">
+    <div class="narrative-text" id="narrative-text"></div>
+  </div>
+
+  <!-- HUD -->
+  <div class="hud" id="hud">Seek the bonfire to begin...</div>
+
+  <!-- Souls Counter -->
+  <div class="souls-counter" id="souls-counter">Souls: 0</div>
+
+  <a-scene
+    embedded
+    renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true"
+    xr-mode-ui="enabled: false"
+    arjs="sourceType: webcam; detectionMode: mono; debugUIEnabled: false"
+    vr-mode-ui="enabled: false">
+
+    <!-- Cursor for interaction -->
+    <a-entity cursor="rayOrigin: mouse; fuse: false" raycaster="objects: .interactive"></a-entity>
+
+    <!-- Ambient lighting -->
+    <a-entity light="type: ambient; intensity: 0.3; color: #1a1a2e"></a-entity>
+    <a-entity light="type: directional; intensity: 0.4; color: #d4c5a9" position="2 3 1"></a-entity>
+
+    <!-- MARKER 1: BONFIRE (NFT) -->
+    <a-nft
+      type="nft"
+      url="Bonfire_Header"
+      smooth="true"
+      smoothCount="10"
+      smoothTolerance="0.01"
+      smoothThreshold="5"
+      id="marker-bonfire">
+      <a-entity dark-particles></a-entity>
+
+      <!-- Bonfire structure -->
+      <a-entity id="bonfire-group" bonfire>
+        <!-- Base logs -->
+        <a-box class="interactive" position="0 0.05 0" width="0.3" height="0.1" depth="0.3"
+               material="color: #2d2d2d; roughness: 0.9" rotation="0 45 0"></a-box>
+        <a-box position="0.1 0.05 0" width="0.35" height="0.08" depth="0.08"
+               material="color: #3d2817; roughness: 0.9" rotation="0 30 0"></a-box>
+        <a-box position="-0.1 0.05 0" width="0.35" height="0.08" depth="0.08"
+               material="color: #3d2817; roughness: 0.9" rotation="0 -30 0"></a-box>
+
+        <!-- Flame (initially dim) -->
+        <a-cone id="flame" class="interactive" position="0 0.3 0" radius-bottom="0.15" radius-top="0.02" height="0.4"
+                material="color: #ff4400; emissive: #ff4400; emissiveIntensity: 0.3; transparent: true; opacity: 0.7"
+                animation__flicker="property: scale; to: 1 1.2 1; dur: 500; loop: true; dir: alternate; easing: easeInOutSine">
+          <a-entity light="type: point; intensity: 0.3; color: #ff6600; distance: 2; decay: 2"></a-entity>
+        </a-cone>
+
+        <!-- Embers -->
+        <a-sphere position="0.05 0.5 0.05" radius="0.02" material="color: #ff8800; emissive: #ff6600; emissiveIntensity: 1"
+                  animation="property: position; to: 0.08 0.8 0.03; dur: 2000; loop: true; easing: easeOutQuad"></a-sphere>
+      </a-entity>
+
+      <!-- Ground circle -->
+      <a-circle position="0 0.01 0" radius="0.8" rotation="-90 0 0"
+                material="color: #1a1a1a; opacity: 0.5; transparent: true"></a-circle>
+    </a-marker>
+
+    <!-- MARKER 2: LEGENDARY SWORD (Kanji) -->
+    <a-marker preset="kanji" id="marker-sword">
+      <a-entity dark-particles></a-entity>
+
+      <!-- Sword pedestal -->
+      <a-entity id="sword-group" legendary-sword>
+        <!-- Stone pedestal -->
+        <a-cylinder position="0 0.1 0" radius="0.25" height="0.2"
+                    material="color: #4a4a4a; roughness: 0.9; metalness: 0.1"></a-cylinder>
+        <a-cylinder position="0 0.21 0" radius="0.28" height="0.02"
+                    material="color: #3a3a3a; roughness: 0.9"></a-cylinder>
+
+        <!-- Sword -->
+        <a-entity class="interactive" position="0 0.5 0" rotation="0 0 0" float="speed: 4000; distance: 0.15">
+          <!-- Blade -->
+          <a-box position="0 0.3 0" width="0.05" height="0.6" depth="0.02"
+                 material="color: #c0c0c0; metalness: 0.9; roughness: 0.2; emissive: #4da6ff; emissiveIntensity: 0.5"
+                 pulse-glow="color: #4da6ff; speed: 2000"></a-box>
+          <!-- Edge glow -->
+          <a-box position="0 0.3 0.015" width="0.02" height="0.6" depth="0.01"
+                 material="color: #ffffff; emissive: #4da6ff; emissiveIntensity: 1; transparent: true; opacity: 0.8"></a-box>
+
+          <!-- Guard -->
+          <a-box position="0 0 0" width="0.3" height="0.05" depth="0.05"
+                 material="color: #8b7355; metalness: 0.6; roughness: 0.4"></a-box>
+
+          <!-- Handle -->
+          <a-cylinder position="0 -0.1 0" radius="0.03" height="0.2"
+                      material="color: #4a3c28; roughness: 0.8"></a-cylinder>
+
+          <!-- Pommel -->
+          <a-sphere position="0 -0.21 0" radius="0.05"
+                    material="color: #8b7355; metalness: 0.7; roughness: 0.3"></a-sphere>
+
+          <!-- Light -->
+          <a-entity light="type: point; intensity: 0.5; color: #4da6ff; distance: 1.5"></a-entity>
+        </a-entity>
+
+        <!-- Runes circle -->
+        <a-ring position="0 0.23 0" radius-inner="0.3" radius-outer="0.35" rotation="-90 0 0"
+                material="color: #4da6ff; emissive: #4da6ff; emissiveIntensity: 0.8; transparent: true; opacity: 0.6"
+                animation="property: rotation; to: -90 360 0; dur: 20000; loop: true; easing: linear"></a-ring>
+      </a-entity>
+    </a-nft>
+
+    <!-- MARKER 3: BOSS GUARDIAN (NFT) -->
+    <a-nft
+      type="nft"
+      url="dragon"
+      smooth="true"
+      smoothCount="10"
+      smoothTolerance="0.01"
+      smoothThreshold="5"
+      id="marker-boss">
+      <a-entity dark-particles></a-entity>
+
+      <!-- Boss entity -->
+      <a-entity id="boss-group" boss-entity="health: 5" position="0 0.5 0">
+        <!-- Core body - menacing figure -->
+        <a-entity class="interactive">
+          <!-- Head/skull -->
+          <a-sphere position="0 0.7 0" radius="0.2"
+                    material="color: #2a2a2a; roughness: 0.7; metalness: 0.3"></a-sphere>
+          <!-- Eye glow -->
+          <a-sphere position="-0.08 0.72 0.15" radius="0.04"
+                    material="color: #ff0000; emissive: #ff0000; emissiveIntensity: 2"
+                    pulse-glow="color: #ff0000; speed: 1500"></a-sphere>
+          <a-sphere position="0.08 0.72 0.15" radius="0.04"
+                    material="color: #ff0000; emissive: #ff0000; emissiveIntensity: 2"
+                    pulse-glow="color: #ff0000; speed: 1500"></a-sphere>
+
+          <!-- Torso -->
+          <a-cylinder position="0 0.3 0" radius="0.15" height="0.5"
+                      material="color: #1a1a1a; roughness: 0.8; metalness: 0.4"></a-cylinder>
+
+          <!-- Shoulders -->
+          <a-box position="-0.25 0.5 0" width="0.15" height="0.2" depth="0.2"
+                 material="color: #2a2a2a; roughness: 0.6; metalness: 0.5"
+                 rotation="0 0 -20"></a-box>
+          <a-box position="0.25 0.5 0" width="0.15" height="0.2" depth="0.2"
+                 material="color: #2a2a2a; roughness: 0.6; metalness: 0.5"
+                 rotation="0 0 20"></a-box>
+
+          <!-- Weapon arm -->
+          <a-cylinder position="0.35 0.3 0" radius="0.05" height="0.4" rotation="0 0 -45"
+                      material="color: #3a3a3a; roughness: 0.7"></a-cylinder>
+          <a-box position="0.5 0.1 0" width="0.08" height="0.4" depth="0.04" rotation="0 0 -20"
+                 material="color: #666; metalness: 0.8; roughness: 0.3; emissive: #660000; emissiveIntensity: 0.3"></a-box>
+
+          <!-- Ominous glow -->
+          <a-entity light="type: point; intensity: 0.8; color: #ff0000; distance: 2; decay: 2"></a-entity>
+
+          <!-- Floating animation -->
+          <a-animation attribute="position" from="0 0.5 0" to="0 0.6 0"
+                       dur="3000" direction="alternate" repeat="indefinite" easing="ease-in-out-sine"></a-animation>
+          <a-animation attribute="rotation" from="0 0 0" to="0 360 0"
+                       dur="20000" repeat="indefinite" easing="linear"></a-animation>
+        </a-entity>
+
+        <!-- Dark aura ring -->
+        <a-ring position="0 0.5 0" radius-inner="0.4" radius-outer="0.45" rotation="-90 0 0"
+                material="color: #8b0000; emissive: #8b0000; emissiveIntensity: 1; transparent: true; opacity: 0.4; side: double"
+                animation="property: rotation; to: -90 -360 0; dur: 8000; loop: true; easing: linear"></a-ring>
+      </a-entity>
+    </a-nft>
+
+    <a-entity camera></a-entity>
+  </a-scene>
+
+  <script>
+    // Title screen
+    document.getElementById('start-btn').addEventListener('click', () => {
+      document.getElementById('title-screen').classList.add('hide');
+      GameState.updateNarrative();
+    });
+
+    // Bonfire ignite animation
+    document.getElementById('bonfire-group').addEventListener('ignite', () => {
+      const flame = document.getElementById('flame');
+      flame.setAttribute('material', 'emissiveIntensity', 2);
+      flame.setAttribute('material', 'opacity', 1);
+      flame.setAttribute('animation__grow', 'property: scale; to: 1.5 1.8 1.5; dur: 1000; easing: easeOutElastic');
+
+      // Enhance light
+      flame.querySelector('[light]').setAttribute('light', 'intensity', 1.5);
+    });
+
+    // Sword claim animation
+    document.getElementById('sword-group').addEventListener('claim', () => {
+      const sword = document.querySelector('#sword-group .interactive');
+      sword.setAttribute('animation__claim', 'property: position; to: 0 1.5 0; dur: 2000; easing: easeInOutCubic');
+      sword.setAttribute('animation__spin', 'property: rotation; to: 0 720 0; dur: 2000; easing: easeInOutCubic');
+      setTimeout(() => {
+        sword.setAttribute('animation__fade', 'property: components.material.material.opacity; to: 0; dur: 500');
+      }, 2000);
+    });
+
+    // Boss damage animation
+    document.getElementById('boss-group').addEventListener('damage', () => {
+      const boss = document.querySelector('#boss-group .interactive');
+      boss.setAttribute('animation__damage', 'property: scale; to: 0.9 0.9 0.9; dur: 200; dir: alternate; loop: 2');
+
+      // Flash red
+      const torso = boss.querySelector('a-cylinder');
+      torso.setAttribute('animation__flash', 'property: components.material.material.emissive; to: #ff0000; dur: 200; dir: alternate; loop: 2');
+    });
+
+    // Boss defeat animation
+    document.getElementById('boss-group').addEventListener('defeat', () => {
+      const boss = document.getElementById('boss-group');
+      boss.setAttribute('animation__fall', 'property: position; to: 0 -0.5 0; dur: 2000; easing: easeInCubic');
+      boss.setAttribute('animation__dissolve', 'property: scale; to: 0 0 0; dur: 2000; easing: easeInCubic');
+
+      // Explosion effect
+      const particles = boss.parentEl.querySelector('[dark-particles]');
+      particles.setAttribute('animation__explode', 'property: scale; to: 3 3 3; dur: 1000');
+    });
+  </script>
+</body>
+</html>
