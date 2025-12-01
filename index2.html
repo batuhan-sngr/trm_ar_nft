@@ -9,6 +9,41 @@
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
   <!-- AR.js for A-Frame with NFT image tracking support (use raw.githack CDN for correct MIME) -->
   <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+  <script>
+    // Verify AR.js NFT build loaded; if not, attempt a fallback and show status
+    (function verifyARjs(){
+      function showStatus(msg, isError){
+        console[isError? 'error':'log']('[AR-LOAD] ' + msg);
+      }
+
+      function hasNFT() {
+        try {
+          return !!(window.AFRAME && (AFRAME.components['nft'] || AFRAME.components['marker'] || document.createElement('a-nft')));
+        } catch(e) { return false; }
+      }
+
+      if (hasNFT()) {
+        showStatus('AR.js NFT build appears loaded.');
+        return;
+      }
+
+      showStatus('AR.js NFT not detected — attempting fallback load from jsDelivr...', true);
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar-nft.js';
+      s.onload = () => {
+        if (hasNFT()) showStatus('Fallback loaded OK.');
+        else showStatus('Fallback loaded but NFT component still missing.', true);
+      };
+      s.onerror = () => {
+        showStatus('Fallback load failed — AR.js NFT unavailable.', true);
+        const el = document.createElement('div');
+        el.innerText = 'AR.js NFT load failed — check console.';
+        el.style.position = 'fixed'; el.style.left = '10px'; el.style.bottom = '10px'; el.style.zIndex = 9999; el.style.background = 'rgba(0,0,0,0.6)'; el.style.color = '#f88'; el.style.padding = '8px';
+        document.body.appendChild(el);
+      };
+      document.head.appendChild(s);
+    })();
+  </script>
 
   <style>
     body { margin:0; overflow:hidden; background: #000; }
