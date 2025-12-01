@@ -512,6 +512,98 @@
       console.log('NFT Marker Loaded!', e.detail);
       updateHUD('Marker detected! Look at the object.');
     });
+
+    // Fallback primitive manager
+    (function() {
+      const FALLBACK_TIMEOUT = 2000; // ms until we stop waiting for model and keep fallback visible
+
+      function ensureFallback(entity) {
+        // entity is the <a-entity> that has gltf-model and model-debug
+        if (!entity) return null;
+        let fb = entity.querySelector('.fallback-primitive');
+        if (!fb) {
+          // choose primitive by name hint
+          const tag = document.createElement('a-entity');
+          tag.className = 'fallback-primitive';
+          tag.setAttribute('geometry', 'primitive: box;');
+          tag.setAttribute('material', 'color: #888888; opacity: 0.95; shader: flat');
+          tag.setAttribute('scale', '0.5 0.5 0.5');
+          tag.setAttribute('position', '0 0 0');
+          tag.setAttribute('visible', 'false');
+          entity.appendChild(tag);
+          fb = tag;
+        }
+        return fb;
+      }
+
+      function findMarkerAncestor(el) {
+        let p = el.parentElement;
+        while (p) {
+          const tag = p.tagName && p.tagName.toLowerCase();
+          if (tag === 'a-nft' || tag === 'a-marker') return p;
+          p = p.parentElement;
+        }
+        return null;
+      }
+
+      // Attach handlers for each interactive model entity
+      function setupFallbacks() {
+        const models = document.querySelectorAll('.interactive.model-debug');
+        models.forEach((m) => {
+          const fb = ensureFallback(m);
+          const marker = findMarkerAncestor(m);
+          if (!marker) return;
+
+          // Avoid double-binding
+          if (marker.__fallbackSetup) return;
+          marker.__fallbackSetup = true;
+
+          let waitingTimers = new Map();
+
+          function onFound() {
+            // show fallback immediately
+            try { fb.setAttribute('visible', 'true'); } catch(e){}
+
+            // start a timeout to keep fallback visible if model doesn't load
+            const id = setTimeout(() => {
+              waitingTimers.delete(m);
+              // keep fallback visible until model-loaded or model-error
+            }, FALLBACK_TIMEOUT);
+            waitingTimers.set(m, id);
+          }
+
+          function onLost() {
+            // hide fallback and clear timers
+            try { fb.setAttribute('visible', 'false'); } catch(e){}
+            const t = waitingTimers.get(m);
+            if (t) { clearTimeout(t); waitingTimers.delete(m); }
+          }
+
+          marker.addEventListener('markerFound', onFound);
+          marker.addEventListener('markerLost', onLost);
+
+          // also listen for model-loaded/model-error on the model entity
+          m.addEventListener('model-loaded', () => {
+            // hide fallback when model is ready
+            try { fb.setAttribute('visible', 'false'); } catch(e){}
+            const t = waitingTimers.get(m);
+            if (t) { clearTimeout(t); waitingTimers.delete(m); }
+          });
+
+          m.addEventListener('model-error', () => {
+            // ensure fallback remains visible
+            try { fb.setAttribute('visible', 'true'); } catch(e){}
+            const t = waitingTimers.get(m);
+            if (t) { clearTimeout(t); waitingTimers.delete(m); }
+          });
+        });
+      }
+
+      // Run once DOM ready for A-Frame entities
+      window.addEventListener('DOMContentLoaded', () => setTimeout(setupFallbacks, 200));
+      // in case scene changes later, also run after window load
+      window.addEventListener('load', () => setTimeout(setupFallbacks, 200));
+    })();
   </script>
 </body>
 </html>
