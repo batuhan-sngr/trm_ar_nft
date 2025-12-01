@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="ub-8" />
+  <meta charset="utf-8" />
   <title>Dark Souls AR - The Forgotten Path</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 
@@ -284,7 +284,7 @@
       
       <!-- Bonfire GLB Model -->
       <a-entity 
-        glb-model="./models/bonfire.glb"
+        gltf-model="./models/bonfire.glb"
         class="interactive"
         bonfire-interactive
         model-debug
@@ -297,6 +297,20 @@
       </a-entity>
     </a-nft>
 
+    <!-- TEST: Hiro pattern marker duplicate for quick testing (shows bonfire when Hiro is detected) -->
+    <a-marker preset="hiro" emitevents="true">
+      <a-entity
+        gltf-model="./models/bonfire.glb"
+        class="interactive"
+        bonfire-interactive
+        model-debug
+        position="0 0.5 1"
+        scale="2 2 2"
+        rotation="0 0 0">
+        <a-entity light="type: point; intensity: 2; color: #ff6600; distance: 3; decay: 1" position="0 0.5 0"></a-entity>
+      </a-entity>
+    </a-marker>
+
     <!-- MARKER 2: SWORD (NFT) -->
     <a-nft
       type="nft"
@@ -308,7 +322,7 @@
       
       <!-- Sword GLB Model -->
       <a-entity 
-        glb-model="./models/Sword.glb"
+        gltf-model="./models/sword.glb"
         class="interactive"
         sword-interactive
         model-debug
@@ -322,6 +336,21 @@
       </a-entity>
     </a-nft>
 
+    <!-- TEST: Hiro pattern marker duplicate for quick testing (shows sword when Hiro is detected) -->
+    <a-marker preset="hiro" emitevents="true">
+      <a-entity
+        gltf-model="./models/sword.glb"
+        class="interactive"
+        sword-interactive
+        model-debug
+        position="0 1 1"
+        scale="2 2 2"
+        rotation="-90 0 0"
+        float="speed: 4000; distance: 0.15">
+        <a-entity light="type: point; intensity: 1.5; color: #4da6ff; distance: 2" position="0 0 0"></a-entity>
+      </a-entity>
+    </a-marker>
+
     <!-- MARKER 3: DRAGON BOSS (NFT) -->
     <a-nft
       type="nft"
@@ -333,7 +362,7 @@
       
       <!-- Dragon GLB Model -->
       <a-entity 
-        glb-model="./models/dragon.glb"
+        gltf-model="./models/dragon.glb"
         class="interactive"
         boss-interactive="health: 5"
         model-debug
@@ -347,19 +376,85 @@
       </a-entity>
     </a-nft>
 
+    <!-- TEST: Hiro pattern marker duplicate for quick testing (shows dragon when Hiro is detected) -->
+    <a-marker preset="hiro" emitevents="true">
+      <a-entity
+        gltf-model="./models/dragon.glb"
+        class="interactive"
+        boss-interactive="health: 5"
+        model-debug
+        position="0 0.5 1"
+        scale="2 2 2"
+        rotation="0 180 0"
+        animation__idle="property: rotation; to: 0 540 0; dur: 20000; loop: true; easing: linear">
+        <a-entity light="type: point; intensity: 2; color: #ff0000; distance: 4; decay: 1" position="0 0.5 0"></a-entity>
+      </a-entity>
+    </a-marker>
+
     <a-entity camera></a-entity>
   </a-scene>
 
   <script>
-    // GLB Model Loading Debug
+    // GLB Model Loading Debug + visibility/material fixer
     AFRAME.registerComponent('model-debug', {
       init() {
-        this.el.addEventListener('model-loaded', () => {
-          console.log('✅ Model loaded successfully:', this.el.getAttribute('glb-model'));
+        this.el.addEventListener('model-loaded', (evt) => {
+          const src = this.el.getAttribute('gltf-model') || this.el.getAttribute('src');
+          console.log('✅ Model loaded successfully:', src, evt && evt.detail);
           updateHUD('3D Model loaded!');
+
+          // Force visibility and adjust materials/scale to avoid invisible results
+          try {
+            const THREE = AFRAME.THREE;
+            const obj = (evt && evt.detail && evt.detail.model) || this.el.getObject3D('mesh') || this.el.object3D;
+            if (obj) {
+              // ensure the entity is visible
+              this.el.setAttribute('visible', true);
+              obj.visible = true;
+
+              // place at local origin (so marker transforms control it predictably)
+              if (obj.position) {
+                obj.position.set(0, 0, 0);
+              }
+
+              // enforce a minimum reasonable scale so tiny imports are visible
+              const minScale = 0.5;
+              const currentScale = this.el.getAttribute('scale') || {x:1,y:1,z:1};
+              if ((currentScale.x && currentScale.x < minScale) || (currentScale.y && currentScale.y < minScale) || (currentScale.z && currentScale.z < minScale)) {
+                this.el.setAttribute('scale', `${Math.max(currentScale.x||1,minScale)} ${Math.max(currentScale.y||1,minScale)} ${Math.max(currentScale.z||1,minScale)}`);
+              }
+
+              // Traverse meshes and tweak materials
+              obj.traverse((node) => {
+                if (node.isMesh) {
+                  node.visible = true;
+                  const mat = node.material;
+                  if (mat) {
+                    try {
+                      // Add a slight emissive tint and make double-sided to avoid invisible faces
+                      if (mat.emissive !== undefined) {
+                        mat.emissive = mat.emissive || new THREE.Color(0x222222);
+                        mat.emissiveIntensity = Math.max(mat.emissiveIntensity || 0, 0.6);
+                      } else if (mat.color) {
+                        mat.color = mat.color || new THREE.Color(0x888888);
+                      }
+                      if (mat.side !== undefined) mat.side = THREE.DoubleSide;
+                      mat.needsUpdate = true;
+                    } catch (matErr) {
+                      // ignore material tweak failures
+                      console.warn('Model-debug: material tweak failed', matErr);
+                    }
+                  }
+                }
+              });
+            }
+          } catch (err) {
+            console.warn('model-debug: post-load adjustments failed', err);
+          }
         });
+
         this.el.addEventListener('model-error', (e) => {
-          console.error('❌ Model loading error:', e.detail);
+          console.error('❌ Model loading error:', e && e.detail ? e.detail : e);
           updateHUD('Model failed to load - check console');
         });
       }
