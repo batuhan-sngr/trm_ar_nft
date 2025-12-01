@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="ub-8" />
   <title>Dark Souls AR - The Forgotten Path</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 
@@ -284,7 +284,7 @@
       
       <!-- Bonfire GLB Model -->
       <a-entity 
-        gltf-model="./models/bonfire.glb"
+        glb-model="./models/bonfire.glb"
         class="interactive"
         bonfire-interactive
         model-debug
@@ -308,7 +308,7 @@
       
       <!-- Sword GLB Model -->
       <a-entity 
-        gltf-model="./models/Sword.glb"
+        glb-model="./models/Sword.glb"
         class="interactive"
         sword-interactive
         model-debug
@@ -333,7 +333,7 @@
       
       <!-- Dragon GLB Model -->
       <a-entity 
-        gltf-model="./models/dragon.glb"
+        glb-model="./models/dragon.glb"
         class="interactive"
         boss-interactive="health: 5"
         model-debug
@@ -355,7 +355,7 @@
     AFRAME.registerComponent('model-debug', {
       init() {
         this.el.addEventListener('model-loaded', () => {
-          console.log('✅ Model loaded successfully:', this.el.getAttribute('gltf-model'));
+          console.log('✅ Model loaded successfully:', this.el.getAttribute('glb-model'));
           updateHUD('3D Model loaded!');
         });
         this.el.addEventListener('model-error', (e) => {
