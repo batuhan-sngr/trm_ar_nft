@@ -269,8 +269,9 @@
               animation__fusecomplete="property: scale; startEvents: click; from: 0.5 0.5 0.5; to: 1 1 1; dur: 150"></a-entity>
 
     <!-- Ambient lighting -->
-    <a-entity light="type: ambient; intensity: 0.4; color: #1a1a2e"></a-entity>
-    <a-entity light="type: directional; intensity: 0.6; color: #d4c5a9" position="2 3 1"></a-entity>
+    <a-entity light="type: ambient; intensity: 1; color: #ffffff"></a-entity>
+    <a-entity light="type: directional; intensity: 1; color: #ffffff" position="1 1 1"></a-entity>
+    <a-entity light="type: directional; intensity: 0.5; color: #ffffff" position="-1 1 -1"></a-entity>
 
     <!-- MARKER 1: BONFIRE (NFT) -->
     <a-nft
@@ -287,18 +288,12 @@
         class="interactive"
         bonfire-interactive
         model-debug
-        position="0 0 0"
-        scale="1 1 1"
+        position="0 0.5 0"
+        scale="2 2 2"
         rotation="0 0 0">
         
-        <!-- Fallback visual if model doesn't load -->
-        <a-cone position="0 0.3 0" radius-bottom="0.15" radius-top="0.02" height="0.4"
-                material="color: #ff4400; emissive: #ff4400; emissiveIntensity: 1; transparent: true; opacity: 0.7"
-                animation__flicker="property: scale; to: 1 1.2 1; dur: 500; loop: true; dir: alternate; easing: easeInOutSine"
-                visible="true"></a-cone>
-        
         <!-- Additional glow effect -->
-        <a-entity light="type: point; intensity: 1; color: #ff6600; distance: 2; decay: 2" position="0 0.5 0"></a-entity>
+        <a-entity light="type: point; intensity: 2; color: #ff6600; distance: 3; decay: 1" position="0 0.5 0"></a-entity>
       </a-entity>
     </a-nft>
 
@@ -317,19 +312,13 @@
         class="interactive"
         sword-interactive
         model-debug
-        position="0 0.5 0"
-        scale="1 1 1"
-        rotation="0 0 0"
-        float="speed: 4000; distance: 0.15"
-        pulse-glow="speed: 2000">
-        
-        <!-- Fallback visual if model doesn't load -->
-        <a-box width="0.05" height="0.6" depth="0.02"
-               material="color: #c0c0c0; metalness: 0.9; roughness: 0.2; emissive: #4da6ff; emissiveIntensity: 0.8"
-               visible="true"></a-box>
+        position="0 1 0"
+        scale="2 2 2"
+        rotation="-90 0 0"
+        float="speed: 4000; distance: 0.15">
         
         <!-- Mystical glow -->
-        <a-entity light="type: point; intensity: 0.8; color: #4da6ff; distance: 1.5" position="0 0.3 0"></a-entity>
+        <a-entity light="type: point; intensity: 1.5; color: #4da6ff; distance: 2" position="0 0 0"></a-entity>
       </a-entity>
     </a-nft>
 
@@ -348,24 +337,13 @@
         class="interactive"
         boss-interactive="health: 5"
         model-debug
-        position="0 0 0"
-        scale="1 1 1"
-        rotation="0 0 0"
-        animation__idle="property: rotation; to: 0 360 0; dur: 20000; loop: true; easing: linear">
-        
-        <!-- Fallback visual if model doesn't load -->
-        <a-sphere position="0 0.7 0" radius="0.2" 
-                  material="color: #2a2a2a; roughness: 0.7; metalness: 0.3"
-                  visible="true"></a-sphere>
-        <a-sphere position="-0.08 0.72 0.15" radius="0.04"
-                  material="color: #ff0000; emissive: #ff0000; emissiveIntensity: 2"
-                  visible="true"></a-sphere>
-        <a-sphere position="0.08 0.72 0.15" radius="0.04"
-                  material="color: #ff0000; emissive: #ff0000; emissiveIntensity: 2"
-                  visible="true"></a-sphere>
+        position="0 0.5 0"
+        scale="2 2 2"
+        rotation="0 180 0"
+        animation__idle="property: rotation; to: 0 540 0; dur: 20000; loop: true; easing: linear">
         
         <!-- Ominous red glow -->
-        <a-entity light="type: point; intensity: 1.2; color: #ff0000; distance: 3; decay: 2" position="0 1 0"></a-entity>
+        <a-entity light="type: point; intensity: 2; color: #ff0000; distance: 4; decay: 1" position="0 0.5 0"></a-entity>
       </a-entity>
     </a-nft>
 
