@@ -283,12 +283,19 @@
       
       <!-- Bonfire GLB Model -->
       <a-entity 
-        gltf-model="url(models/bonfire.glb)"
+        gltf-model="./models/bonfire.glb"
         class="interactive"
         bonfire-interactive
+        model-debug
         position="0 0 0"
         scale="1 1 1"
         rotation="0 0 0">
+        
+        <!-- Fallback visual if model doesn't load -->
+        <a-cone position="0 0.3 0" radius-bottom="0.15" radius-top="0.02" height="0.4"
+                material="color: #ff4400; emissive: #ff4400; emissiveIntensity: 1; transparent: true; opacity: 0.7"
+                animation__flicker="property: scale; to: 1 1.2 1; dur: 500; loop: true; dir: alternate; easing: easeInOutSine"
+                visible="true"></a-cone>
         
         <!-- Additional glow effect -->
         <a-entity light="type: point; intensity: 1; color: #ff6600; distance: 2; decay: 2" position="0 0.5 0"></a-entity>
@@ -306,14 +313,20 @@
       
       <!-- Sword GLB Model -->
       <a-entity 
-        gltf-model="url(models/Sword.glb)"
+        gltf-model="./models/Sword.glb"
         class="interactive"
         sword-interactive
+        model-debug
         position="0 0.5 0"
         scale="1 1 1"
         rotation="0 0 0"
         float="speed: 4000; distance: 0.15"
         pulse-glow="speed: 2000">
+        
+        <!-- Fallback visual if model doesn't load -->
+        <a-box width="0.05" height="0.6" depth="0.02"
+               material="color: #c0c0c0; metalness: 0.9; roughness: 0.2; emissive: #4da6ff; emissiveIntensity: 0.8"
+               visible="true"></a-box>
         
         <!-- Mystical glow -->
         <a-entity light="type: point; intensity: 0.8; color: #4da6ff; distance: 1.5" position="0 0.3 0"></a-entity>
@@ -331,13 +344,25 @@
       
       <!-- Dragon GLB Model -->
       <a-entity 
-        gltf-model="url(models/dragon.glb)"
+        gltf-model="./models/dragon.glb"
         class="interactive"
         boss-interactive="health: 5"
+        model-debug
         position="0 0 0"
         scale="1 1 1"
         rotation="0 0 0"
         animation__idle="property: rotation; to: 0 360 0; dur: 20000; loop: true; easing: linear">
+        
+        <!-- Fallback visual if model doesn't load -->
+        <a-sphere position="0 0.7 0" radius="0.2" 
+                  material="color: #2a2a2a; roughness: 0.7; metalness: 0.3"
+                  visible="true"></a-sphere>
+        <a-sphere position="-0.08 0.72 0.15" radius="0.04"
+                  material="color: #ff0000; emissive: #ff0000; emissiveIntensity: 2"
+                  visible="true"></a-sphere>
+        <a-sphere position="0.08 0.72 0.15" radius="0.04"
+                  material="color: #ff0000; emissive: #ff0000; emissiveIntensity: 2"
+                  visible="true"></a-sphere>
         
         <!-- Ominous red glow -->
         <a-entity light="type: point; intensity: 1.2; color: #ff0000; distance: 3; decay: 2" position="0 1 0"></a-entity>
@@ -348,6 +373,20 @@
   </a-scene>
 
   <script>
+    // GLB Model Loading Debug
+    AFRAME.registerComponent('model-debug', {
+      init() {
+        this.el.addEventListener('model-loaded', () => {
+          console.log('✅ Model loaded successfully:', this.el.getAttribute('gltf-model'));
+          updateHUD('3D Model loaded!');
+        });
+        this.el.addEventListener('model-error', (e) => {
+          console.error('❌ Model loading error:', e.detail);
+          updateHUD('Model failed to load - check console');
+        });
+      }
+    });
+
     // Title screen
     document.getElementById('start-btn').addEventListener('click', () => {
       document.getElementById('title-screen').classList.add('hide');
