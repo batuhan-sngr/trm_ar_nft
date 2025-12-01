@@ -7,8 +7,8 @@
 
   <!-- A-Frame -->
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-  <!-- AR.js for A-Frame (marker-based AR) -->
-  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
+  <!-- AR.js for A-Frame with NFT image tracking support (use raw.githack CDN for correct MIME) -->
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
 
   <style>
     body { margin:0; overflow:hidden; background: #000; }
@@ -279,7 +279,7 @@
     embedded
     renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true"
     xr-mode-ui="enabled: false"
-    arjs="sourceType: webcam; debugUIEnabled: true; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+    arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: true"
     vr-mode-ui="enabled: false"
     loading-screen="enabled: false">
 
@@ -296,11 +296,14 @@
     <a-entity light="type: ambient; intensity: 0.3; color: #1a1a2e"></a-entity>
     <a-entity light="type: directional; intensity: 0.4; color: #d4c5a9" position="2 3 1"></a-entity>
 
-    <!-- MARKER 1: BONFIRE (Pattern) -->
-    <a-marker
-      type="pattern"
-      url="./Bonfire_Header.patt"
+    <!-- MARKER 1: BONFIRE (NFT image target) -->
+    <a-nft
+      type="nft"
+      url="./bonfire"
       smooth="true"
+      smoothCount="10"
+      smoothTolerance="0.01"
+      smoothThreshold="5"
       id="marker-bonfire">
       <a-entity dark-particles></a-entity>
       
@@ -330,9 +333,17 @@
       <a-circle position="0 0.01 0" radius="0.8" rotation="-90 0 0" 
                 material="color: #1a1a1a; opacity: 0.5; transparent: true"></a-circle>
     </a-marker>
+      </a-nft>
 
-    <!-- MARKER 2: LEGENDARY SWORD (Kanji) -->
-    <a-marker preset="kanji" id="marker-sword">
+    <!-- MARKER 2: LEGENDARY SWORD (NFT image target) -->
+    <a-nft
+      type="nft"
+      url="./sword"
+      smooth="true"
+      smoothCount="10"
+      smoothTolerance="0.01"
+      smoothThreshold="5"
+      id="marker-sword">
       <a-entity dark-particles></a-entity>
       
       <!-- Sword pedestal -->
@@ -375,12 +386,16 @@
                 animation="property: rotation; to: -90 360 0; dur: 20000; loop: true; easing: linear"></a-ring>
       </a-entity>
     </a-marker>
+      </a-nft>
 
-    <!-- MARKER 3: BOSS GUARDIAN (Pattern) -->
-    <a-marker
-      type="pattern"
-      url="./dragon.patt"
+    <!-- MARKER 3: BOSS GUARDIAN (NFT image target) -->
+    <a-nft
+      type="nft"
+      url="./dragon"
       smooth="true"
+      smoothCount="10"
+      smoothTolerance="0.01"
+      smoothThreshold="5"
       id="marker-boss">
       <a-entity dark-particles></a-entity>
       
@@ -433,6 +448,7 @@
                 animation="property: rotation; to: -90 -360 0; dur: 8000; loop: true; easing: linear"></a-ring>
       </a-entity>
     </a-marker>
+      </a-nft>
 
     <a-entity camera></a-entity>
   </a-scene>
@@ -446,6 +462,29 @@
     
     window.addEventListener('arjs-nft-init-data', (e) => {
       console.log('NFT Init Data:', e.detail);
+    });
+
+    // Marker detection debug listeners for NFT elements
+    window.addEventListener('load', () => {
+      const markers = ['marker-bonfire','marker-sword','marker-boss'];
+      markers.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) {
+          console.warn('[MARKER-DBG] element not found:', id);
+          return;
+        }
+        el.addEventListener('markerFound', () => {
+          console.log('[MARKER-DBG] markerFound', id);
+          updateHUD(`Detected: ${id.replace('marker-','')}`);
+          const sc = document.getElementById('souls-counter');
+          sc.classList.add('show');
+          setTimeout(() => sc.classList.remove('show'), 2000);
+        });
+        el.addEventListener('markerLost', () => {
+          console.log('[MARKER-DBG] markerLost', id);
+          updateHUD('Marker lost. Scan again...');
+        });
+      });
     });
 
     // Title screen
