@@ -299,7 +299,7 @@
     <!-- MARKER 1: BONFIRE (NFT image target) -->
     <a-nft
       type="nft"
-      url="./bonfire"
+      url="./nft/bonfire"
       smooth="true"
       smoothCount="10"
       smoothTolerance="0.01"
@@ -340,7 +340,7 @@
     <!-- MARKER 2: LEGENDARY SWORD (NFT image target) -->
     <a-nft
       type="nft"
-      url="./sword"
+      url="./nft/sword"
       smooth="true"
       smoothCount="10"
       smoothTolerance="0.01"
@@ -395,7 +395,7 @@
     <!-- MARKER 3: BOSS GUARDIAN (NFT image target) -->
     <a-nft
       type="nft"
-      url="./dragon"
+      url="./nft/dragon"
       smooth="true"
       smoothCount="10"
       smoothTolerance="0.01"
@@ -490,7 +490,7 @@
             try { f.setAttribute('visible', 'true'); } catch (e) {}
             try {
               const s = f.getAttribute('scale');
-              if (!s) f.setAttribute('scale', '1 1 1');
+              if (!s) f.setAttribute('scale', '3 3 3');
               else if (typeof s === 'string') {
                 // ensure not zero
                 const parts = s.trim().split(/\s+/).map(Number);
@@ -531,7 +531,7 @@
           if (!el._dbgHighlight) {
             const box = document.createElement('a-box');
             box.setAttribute('position', '0 0.5 0');
-            box.setAttribute('scale', '1 1 1');
+            box.setAttribute('scale', '3 3 3');
             box.setAttribute('material', 'color: #ffff00; wireframe: true; opacity: 0.9');
             box.setAttribute('visible', 'true');
 
