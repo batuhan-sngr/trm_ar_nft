@@ -309,6 +309,8 @@
       
       <!-- Bonfire structure -->
       <a-entity id="bonfire-group" bonfire>
+        <!-- Model loader: attempts to load ./models/bonfire.glb; on failure primitives below are used as fallback -->
+        <a-entity class="model-loader" data-model="./models/bonfire.glb" visible="false"></a-entity>
         <!-- Base logs -->
         <a-box class="interactive" position="0 0.05 0" width="0.3" height="0.1" depth="0.3" 
                material="color: #2d2d2d; roughness: 0.9" rotation="0 45 0"></a-box>
@@ -348,6 +350,8 @@
       
       <!-- Sword pedestal -->
       <a-entity id="sword-group" legendary-sword>
+        <!-- Model loader: attempts to load ./models/sword.glb; on failure primitives below are used as fallback -->
+        <a-entity class="model-loader" data-model="./models/sword.glb" visible="false"></a-entity>
         <!-- Stone pedestal -->
         <a-cylinder position="0 0.1 0" radius="0.25" height="0.2" 
                     material="color: #4a4a4a; roughness: 0.9; metalness: 0.1"></a-cylinder>
@@ -401,6 +405,8 @@
       
       <!-- Boss entity -->
       <a-entity id="boss-group" boss-entity="health: 5" position="0 0.5 0">
+        <!-- Model loader: attempts to load ./models/dragon.glb; on failure primitives below are used as fallback -->
+        <a-entity class="model-loader" data-model="./models/dragon.glb" visible="false"></a-entity>
         <!-- Core body - menacing figure -->
         <a-entity class="interactive">
           <!-- Head/skull -->
@@ -587,6 +593,64 @@
       const particles = boss.parentEl.querySelector('[dark-particles]');
       particles.setAttribute('animation__explode', 'property: scale; to: 3 3 3; dur: 1000');
     });
+
+    // --- GLB model loader with primitive fallback ---
+    (function attachModelLoaders(){
+      const groups = [
+        { id: 'bonfire-group', modelAttr: './models/bonfire.glb' },
+        { id: 'sword-group', modelAttr: './models/sword.glb' },
+        { id: 'boss-group', modelAttr: './models/dragon.glb' }
+      ];
+
+      groups.forEach(g => {
+        const group = document.getElementById(g.id);
+        if (!group) return;
+
+        // find loader child we inserted
+        const loader = group.querySelector('.model-loader');
+        // hide fallback primitives until loader resolves
+        const fallbacks = Array.from(group.children).filter(c => c !== loader);
+        fallbacks.forEach(f => f.setAttribute('visible', 'false'));
+
+        if (!loader) {
+          // No loader placeholder; show fallbacks
+          fallbacks.forEach(f => f.setAttribute('visible', 'true'));
+          return;
+        }
+
+        const modelPath = loader.getAttribute('data-model') || g.modelAttr;
+        if (!modelPath) {
+          fallbacks.forEach(f => f.setAttribute('visible', 'true'));
+          return;
+        }
+
+        // Attempt to set gltf-model and listen for events
+        loader.setAttribute('gltf-model', modelPath);
+        loader.addEventListener('model-loaded', () => {
+          console.log('[MODEL-DBG] model-loaded', group.id, modelPath);
+          // show model loader and hide fallbacks
+          loader.setAttribute('visible', 'true');
+          fallbacks.forEach(f => f.setAttribute('visible', 'false'));
+          // small scale/rotation fix to align with previous primitives
+          try { loader.setAttribute('scale', '1 1 1'); } catch(e){}
+        });
+        loader.addEventListener('model-error', (ev) => {
+          console.warn('[MODEL-DBG] model-error', group.id, modelPath, ev && ev.detail);
+          // show fallback primitives
+          loader.setAttribute('visible', 'false');
+          fallbacks.forEach(f => f.setAttribute('visible', 'true'));
+        });
+
+        // Timeout: if neither loaded nor errored after 4s, show fallback
+        setTimeout(() => {
+          if (!loader.getObject3D || !loader.getObject3D('mesh')) {
+            console.warn('[MODEL-DBG] model load timeout, using fallback for', group.id);
+            loader.setAttribute('visible', 'false');
+            fallbacks.forEach(f => f.setAttribute('visible', 'true'));
+          }
+        }, 4000);
+      });
+    })();
   </script>
 </body>
 </html>
