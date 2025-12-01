@@ -570,6 +570,30 @@
       const particles = boss.parentEl.querySelector('[dark-particles]');
       particles.setAttribute('animation__explode', 'property: scale; to: 3 3 3; dur: 1000');
     });
+
+    // --- Marker detection debug listeners ---
+    window.addEventListener('load', () => {
+      const markers = ['marker-bonfire','marker-sword','marker-boss'];
+      markers.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) {
+          console.warn('[MARKER-DBG] element not found:', id);
+          return;
+        }
+        el.addEventListener('markerFound', () => {
+          console.log('[MARKER-DBG] markerFound', id);
+          updateHUD(`Detected: ${id.replace('marker-','')}`);
+          // briefly show souls counter as a visual cue
+          const sc = document.getElementById('souls-counter');
+          sc.classList.add('show');
+          setTimeout(() => sc.classList.remove('show'), 2000);
+        });
+        el.addEventListener('markerLost', () => {
+          console.log('[MARKER-DBG] markerLost', id);
+          updateHUD('Marker lost. Scan again...');
+        });
+      });
+    });
   </script>
 </body>
 </html>
