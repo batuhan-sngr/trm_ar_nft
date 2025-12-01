@@ -132,6 +132,24 @@
     counter.classList.add('show');
   }
 
+  function setVisibleDeep(el, visible) {
+    if (!el) return;
+    try { el.setAttribute('visible', visible); } catch(e) {}
+    Array.from(el.children || []).forEach(child => setVisibleDeep(child, visible));
+  }
+  
+  function showFallbacks(markerEl) {
+    if (!markerEl) return;
+    const fallbackNodes = markerEl.querySelectorAll('[data-fallback="true"]');
+    fallbackNodes.forEach(node => setVisibleDeep(node, true));
+  }
+  
+  function hideFallbacks(markerEl) {
+    if (!markerEl) return;
+    const fallbackNodes = markerEl.querySelectorAll('[data-fallback="true"]');
+    fallbackNodes.forEach(node => setVisibleDeep(node, false));
+  }
+
   // ---------- Interactive Components ----------
   
   // Bonfire interaction
@@ -479,12 +497,13 @@
         el.addEventListener('markerFound', () => {
           console.log('[MARKER-DBG] markerFound', id);
           updateHUD(`Detected: ${id.replace('marker-','')}`);
+          showFallbacks(el);
 
           // Show fallback primitives immediately so user sees something right away
           const loader = el.querySelector('.model-loader');
           const fallbacks = Array.from(el.children).filter(c => c !== loader);
           fallbacks.forEach(f => {
-            try { f.setAttribute('visible', 'true'); } catch (e) {}
+            try { setVisibleDeep(f, true); } catch (e) {}
             try {
               const s = f.getAttribute('scale');
               if (!s) f.setAttribute('scale', '3 3 3');
@@ -570,6 +589,7 @@
               }
             } catch(e) {}
           });
+          hideFallbacks(el);
 
           if (el._dbgHighlight) {
             try { el.removeChild(el._dbgHighlight.box); } catch(e) {}
@@ -644,17 +664,28 @@
         const loader = group.querySelector('.model-loader');
         // hide fallback primitives until loader resolves
         const fallbacks = Array.from(group.children).filter(c => c !== loader);
-        fallbacks.forEach(f => f.setAttribute('visible', 'false'));
+        fallbacks.forEach(f => {
+          f.setAttribute('visible', 'false');
+          f.setAttribute('data-fallback', 'true');
+          setVisibleDeep(f, false);
+        });
 
         if (!loader) {
           // No loader placeholder; show fallbacks
-          fallbacks.forEach(f => f.setAttribute('visible', 'true'));
+          fallbacks.forEach(f => {
+            f.setAttribute('visible', 'true');
+            setVisibleDeep(f, true);
+          });
           return;
         }
 
         const modelPath = loader.getAttribute('data-model') || g.modelAttr;
         if (!modelPath) {
-          fallbacks.forEach(f => f.setAttribute('visible', 'true'));
+          fallbacks.forEach(f => {
+            f.setAttribute('visible', 'true');
+            f.setAttribute('data-fallback', 'true');
+            setVisibleDeep(f, true);
+          });
           return;
         }
 
@@ -703,10 +734,14 @@
 
         // Timeout: if neither loaded nor errored after 4s, show fallback
         setTimeout(() => {
-          if (!loader.getObject3D || !loader.getObject3D('mesh')) {
+          const hasMesh = loader.getObject3D && (loader.getObject3D('mesh') || loader.getObject3D('scene'));
+          if (!hasMesh) {
             console.warn('[MODEL-DBG] model load timeout, using fallback for', group.id);
             loader.setAttribute('visible', 'false');
-            fallbacks.forEach(f => f.setAttribute('visible', 'true'));
+            fallbacks.forEach(f => {
+              f.setAttribute('visible', 'true');
+              setVisibleDeep(f, true);
+            });
           }
         }, 4000);
       });
