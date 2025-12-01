@@ -7,8 +7,8 @@
 
   <!-- A-Frame -->
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-  <!-- AR.js for A-Frame with NFT image tracking support (use raw.githack CDN for correct MIME) -->
-  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+  <!-- AR.js for A-Frame (NFT support) -->
+  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar-nft.js"></script>
 
   <style>
     body { margin:0; overflow:hidden; background: #000; }
@@ -101,7 +101,7 @@
         "In the depths of a forsaken land, a lone bonfire flickers...\n\nTouch the flame to begin your journey.",
         "The bonfire burns bright. Ahead lies a weapon of legend.\n\nClaim the blade that has felled countless hollows.",
         "Armed and ablaze, you face the ancient guardian.\n\nOnly by defeating this sentinel can you escape the darkness.",
-        "The hollow falls. The curse is lifted.\n\nYou have kindled the flame of hope in a world of despair."
+        "The dragon falls. The curse is lifted.\n\nYou have kindled the flame of hope in a world of despair."
       ];
       
       showNarrative(narratives[this.phase]);
@@ -132,28 +132,10 @@
     counter.classList.add('show');
   }
 
-  function setVisibleDeep(el, visible) {
-    if (!el) return;
-    try { el.setAttribute('visible', visible); } catch(e) {}
-    Array.from(el.children || []).forEach(child => setVisibleDeep(child, visible));
-  }
-  
-  function showFallbacks(markerEl) {
-    if (!markerEl) return;
-    const fallbackNodes = markerEl.querySelectorAll('[data-fallback="true"]');
-    fallbackNodes.forEach(node => setVisibleDeep(node, true));
-  }
-  
-  function hideFallbacks(markerEl) {
-    if (!markerEl) return;
-    const fallbackNodes = markerEl.querySelectorAll('[data-fallback="true"]');
-    fallbackNodes.forEach(node => setVisibleDeep(node, false));
-  }
-
   // ---------- Interactive Components ----------
   
   // Bonfire interaction
-  AFRAME.registerComponent('bonfire', {
+  AFRAME.registerComponent('bonfire-interactive', {
     init() {
       this.lit = false;
       const fire = () => {
@@ -164,7 +146,6 @@
           GameState.advance(1);
           updateHUD('The bonfire is lit. Seek the blade ahead.');
           
-          // Show sword marker hint
           setTimeout(() => {
             updateHUD('Scan for the legendary blade...');
           }, 3000);
@@ -176,7 +157,7 @@
   });
 
   // Sword interaction
-  AFRAME.registerComponent('legendary-sword', {
+  AFRAME.registerComponent('sword-interactive', {
     init() {
       this.claimed = false;
       const claim = () => {
@@ -200,7 +181,7 @@
   });
 
   // Boss interaction
-  AFRAME.registerComponent('boss-entity', {
+  AFRAME.registerComponent('boss-interactive', {
     schema: { health: {default: 5} },
     init() {
       this.health = this.data.health;
@@ -231,28 +212,6 @@
     }
   });
 
-  // Ambient particles
-  AFRAME.registerComponent('dark-particles', {
-    init() {
-      const count = 30;
-      for (let i = 0; i < count; i++) {
-        const particle = document.createElement('a-sphere');
-        const x = (Math.random() - 0.5) * 3;
-        const y = Math.random() * 2;
-        const z = (Math.random() - 0.5) * 3;
-        const size = Math.random() * 0.02 + 0.01;
-        
-        particle.setAttribute('position', `${x} ${y} ${z}`);
-        particle.setAttribute('radius', size);
-        particle.setAttribute('material', 'color: #444; opacity: 0.3; transparent: true');
-        particle.setAttribute('animation', 
-          `property: position; to: ${x} ${y+1} ${z}; dur: ${3000 + Math.random()*2000}; loop: true; dir: alternate; easing: easeInOutSine`);
-        
-        this.el.appendChild(particle);
-      }
-    }
-  });
-
   // Floating animation
   AFRAME.registerComponent('float', {
     schema: { speed: {default: 3000}, distance: {default: 0.2} },
@@ -265,10 +224,10 @@
 
   // Pulse glow
   AFRAME.registerComponent('pulse-glow', {
-    schema: { color: {default: '#ff6600'}, speed: {default: 2000} },
+    schema: { speed: {default: 2000} },
     init() {
       this.el.setAttribute('animation__pulse',
-        `property: components.material.material.emissiveIntensity; from: 0.5; to: 1.5; dur: ${this.data.speed}; loop: true; dir: alternate; easing: easeInOutSine`);
+        `property: scale; from: 1 1 1; to: 1.1 1.1 1.1; dur: ${this.data.speed}; loop: true; dir: alternate; easing: easeInOutSine`);
     }
   });
   </script>
@@ -296,9 +255,8 @@
   <a-scene
     embedded
     renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true"
-    xr-mode-ui="enabled: false"
-    arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: true"
     vr-mode-ui="enabled: false"
+    arjs="sourceType: webcam; debugUIEnabled: true; detectionMode: mono_and_matrix;"
     loading-screen="enabled: false">
 
     <!-- Cursor for interaction -->
@@ -311,163 +269,78 @@
               animation__fusecomplete="property: scale; startEvents: click; from: 0.5 0.5 0.5; to: 1 1 1; dur: 150"></a-entity>
 
     <!-- Ambient lighting -->
-    <a-entity light="type: ambient; intensity: 0.3; color: #1a1a2e"></a-entity>
-    <a-entity light="type: directional; intensity: 0.4; color: #d4c5a9" position="2 3 1"></a-entity>
+    <a-entity light="type: ambient; intensity: 0.4; color: #1a1a2e"></a-entity>
+    <a-entity light="type: directional; intensity: 0.6; color: #d4c5a9" position="2 3 1"></a-entity>
 
-    <!-- MARKER 1: BONFIRE (NFT image target) -->
+    <!-- MARKER 1: BONFIRE (NFT) -->
     <a-nft
       type="nft"
-      url="./nft/bonfire"
+      url="nft/bonfire"
       smooth="true"
       smoothCount="10"
-      smoothTolerance="0.01"
-      smoothThreshold="5"
-      id="marker-bonfire">
-      <a-entity dark-particles></a-entity>
+      smoothTolerance=".01"
+      smoothThreshold="5">
       
-      <!-- Bonfire structure -->
-      <a-entity id="bonfire-group" bonfire>
-        <!-- Model loader: attempts to load ./models/bonfire.glb; on failure primitives below are used as fallback -->
-        <a-entity class="model-loader" data-model="./models/bonfire.glb" visible="false"></a-entity>
-        <!-- Base logs -->
-        <a-box class="interactive" position="0 0.05 0" width="0.3" height="0.1" depth="0.3" 
-               material="color: #2d2d2d; roughness: 0.9" rotation="0 45 0"></a-box>
-        <a-box position="0.1 0.05 0" width="0.35" height="0.08" depth="0.08" 
-               material="color: #3d2817; roughness: 0.9" rotation="0 30 0"></a-box>
-        <a-box position="-0.1 0.05 0" width="0.35" height="0.08" depth="0.08" 
-               material="color: #3d2817; roughness: 0.9" rotation="0 -30 0"></a-box>
+      <!-- Bonfire GLB Model -->
+      <a-entity 
+        gltf-model="url(models/bonfire.glb)"
+        class="interactive"
+        bonfire-interactive
+        position="0 0 0"
+        scale="0.5 0.5 0.5"
+        rotation="0 0 0">
         
-        <!-- Flame (initially dim) -->
-        <a-cone id="flame" class="interactive" position="0 0.3 0" radius-bottom="0.15" radius-top="0.02" height="0.4"
-                material="color: #ff4400; emissive: #ff4400; emissiveIntensity: 0.3; transparent: true; opacity: 0.7"
-                animation__flicker="property: scale; to: 1 1.2 1; dur: 500; loop: true; dir: alternate; easing: easeInOutSine">
-          <a-entity light="type: point; intensity: 0.3; color: #ff6600; distance: 2; decay: 2"></a-entity>
-        </a-cone>
-        
-        <!-- Embers -->
-        <a-sphere position="0.05 0.5 0.05" radius="0.02" material="color: #ff8800; emissive: #ff6600; emissiveIntensity: 1"
-                  animation="property: position; to: 0.08 0.8 0.03; dur: 2000; loop: true; easing: easeOutQuad"></a-sphere>
-      </a-entity>
-      
-      <!-- Ground circle -->
-      <a-circle position="0 0.01 0" radius="0.8" rotation="-90 0 0" 
-                material="color: #1a1a1a; opacity: 0.5; transparent: true"></a-circle>
-    </a-nft>
-
-    <!-- MARKER 2: LEGENDARY SWORD (NFT image target) -->
-    <a-nft
-      type="nft"
-      url="./nft/sword"
-      smooth="true"
-      smoothCount="10"
-      smoothTolerance="0.01"
-      smoothThreshold="5"
-      id="marker-sword">
-      <a-entity dark-particles></a-entity>
-      
-      <!-- Sword pedestal -->
-      <a-entity id="sword-group" legendary-sword>
-        <!-- Model loader: attempts to load ./models/sword.glb; on failure primitives below are used as fallback -->
-        <a-entity class="model-loader" data-model="./models/sword.glb" visible="false"></a-entity>
-        <!-- Stone pedestal -->
-        <a-cylinder position="0 0.1 0" radius="0.25" height="0.2" 
-                    material="color: #4a4a4a; roughness: 0.9; metalness: 0.1"></a-cylinder>
-        <a-cylinder position="0 0.21 0" radius="0.28" height="0.02" 
-                    material="color: #3a3a3a; roughness: 0.9"></a-cylinder>
-        
-        <!-- Sword -->
-        <a-entity class="interactive" position="0 0.5 0" rotation="0 0 0" float="speed: 4000; distance: 0.15">
-          <!-- Blade -->
-          <a-box position="0 0.3 0" width="0.05" height="0.6" depth="0.02"
-                 material="color: #c0c0c0; metalness: 0.9; roughness: 0.2; emissive: #4da6ff; emissiveIntensity: 0.5"
-                 pulse-glow="color: #4da6ff; speed: 2000"></a-box>
-          <!-- Edge glow -->
-          <a-box position="0 0.3 0.015" width="0.02" height="0.6" depth="0.01"
-                 material="color: #ffffff; emissive: #4da6ff; emissiveIntensity: 1; transparent: true; opacity: 0.8"></a-box>
-          
-          <!-- Guard -->
-          <a-box position="0 0 0" width="0.3" height="0.05" depth="0.05"
-                 material="color: #8b7355; metalness: 0.6; roughness: 0.4"></a-box>
-          
-          <!-- Handle -->
-          <a-cylinder position="0 -0.1 0" radius="0.03" height="0.2"
-                      material="color: #4a3c28; roughness: 0.8"></a-cylinder>
-          
-          <!-- Pommel -->
-          <a-sphere position="0 -0.21 0" radius="0.05"
-                    material="color: #8b7355; metalness: 0.7; roughness: 0.3"></a-sphere>
-          
-          <!-- Light -->
-          <a-entity light="type: point; intensity: 0.5; color: #4da6ff; distance: 1.5"></a-entity>
-        </a-entity>
-        
-        <!-- Runes circle -->
-        <a-ring position="0 0.23 0" radius-inner="0.3" radius-outer="0.35" rotation="-90 0 0"
-                material="color: #4da6ff; emissive: #4da6ff; emissiveIntensity: 0.8; transparent: true; opacity: 0.6"
-                animation="property: rotation; to: -90 360 0; dur: 20000; loop: true; easing: linear"></a-ring>
+        <!-- Additional glow effect -->
+        <a-entity light="type: point; intensity: 1; color: #ff6600; distance: 2; decay: 2" position="0 0.5 0"></a-entity>
       </a-entity>
     </a-nft>
 
-    <!-- MARKER 3: BOSS GUARDIAN (NFT image target) -->
+    <!-- MARKER 2: SWORD (NFT) -->
     <a-nft
       type="nft"
-      url="./nft/dragon"
+      url="nft/sword"
       smooth="true"
       smoothCount="10"
-      smoothTolerance="0.01"
-      smoothThreshold="5"
-      id="marker-boss">
-      <a-entity dark-particles></a-entity>
+      smoothTolerance=".01"
+      smoothThreshold="5">
       
-      <!-- Boss entity -->
-      <a-entity id="boss-group" boss-entity="health: 5" position="0 0.5 0">
-        <!-- Model loader: attempts to load ./models/dragon.glb; on failure primitives below are used as fallback -->
-        <a-entity class="model-loader" data-model="./models/dragon.glb" visible="false"></a-entity>
-        <!-- Core body - menacing figure -->
-        <a-entity class="interactive">
-          <!-- Head/skull -->
-          <a-sphere position="0 0.7 0" radius="0.2" 
-                    material="color: #2a2a2a; roughness: 0.7; metalness: 0.3"></a-sphere>
-          <!-- Eye glow -->
-          <a-sphere position="-0.08 0.72 0.15" radius="0.04"
-                    material="color: #ff0000; emissive: #ff0000; emissiveIntensity: 2"
-                    pulse-glow="color: #ff0000; speed: 1500"></a-sphere>
-          <a-sphere position="0.08 0.72 0.15" radius="0.04"
-                    material="color: #ff0000; emissive: #ff0000; emissiveIntensity: 2"
-                    pulse-glow="color: #ff0000; speed: 1500"></a-sphere>
-          
-          <!-- Torso -->
-          <a-cylinder position="0 0.3 0" radius="0.15" height="0.5"
-                      material="color: #1a1a1a; roughness: 0.8; metalness: 0.4"></a-cylinder>
-          
-          <!-- Shoulders -->
-          <a-box position="-0.25 0.5 0" width="0.15" height="0.2" depth="0.2"
-                 material="color: #2a2a2a; roughness: 0.6; metalness: 0.5"
-                 rotation="0 0 -20"></a-box>
-          <a-box position="0.25 0.5 0" width="0.15" height="0.2" depth="0.2"
-                 material="color: #2a2a2a; roughness: 0.6; metalness: 0.5"
-                 rotation="0 0 20"></a-box>
-          
-          <!-- Weapon arm -->
-          <a-cylinder position="0.35 0.3 0" radius="0.05" height="0.4" rotation="0 0 -45"
-                      material="color: #3a3a3a; roughness: 0.7"></a-cylinder>
-          <a-box position="0.5 0.1 0" width="0.08" height="0.4" depth="0.04" rotation="0 0 -20"
-                 material="color: #666; metalness: 0.8; roughness: 0.3; emissive: #660000; emissiveIntensity: 0.3"></a-box>
-          
-          <!-- Ominous glow -->
-          <a-entity light="type: point; intensity: 0.8; color: #ff0000; distance: 2; decay: 2"></a-entity>
-          
-          <!-- Floating animation -->
-          <a-animation attribute="position" from="0 0.5 0" to="0 0.6 0" 
-                       dur="3000" direction="alternate" repeat="indefinite" easing="ease-in-out-sine"></a-animation>
-          <a-animation attribute="rotation" from="0 0 0" to="0 360 0"
-                       dur="20000" repeat="indefinite" easing="linear"></a-animation>
-        </a-entity>
+      <!-- Sword GLB Model -->
+      <a-entity 
+        gltf-model="url(models/Sword.glb)"
+        class="interactive"
+        sword-interactive
+        position="0 0.5 0"
+        scale="0.3 0.3 0.3"
+        rotation="0 0 0"
+        float="speed: 4000; distance: 0.15"
+        pulse-glow="speed: 2000">
         
-        <!-- Dark aura ring -->
-        <a-ring position="0 0.5 0" radius-inner="0.4" radius-outer="0.45" rotation="-90 0 0"
-                material="color: #8b0000; emissive: #8b0000; emissiveIntensity: 1; transparent: true; opacity: 0.4; side: double"
-                animation="property: rotation; to: -90 -360 0; dur: 8000; loop: true; easing: linear"></a-ring>
+        <!-- Mystical glow -->
+        <a-entity light="type: point; intensity: 0.8; color: #4da6ff; distance: 1.5" position="0 0.3 0"></a-entity>
+      </a-entity>
+    </a-nft>
+
+    <!-- MARKER 3: DRAGON BOSS (NFT) -->
+    <a-nft
+      type="nft"
+      url="nft/dragon"
+      smooth="true"
+      smoothCount="10"
+      smoothTolerance=".01"
+      smoothThreshold="5">
+      
+      <!-- Dragon GLB Model -->
+      <a-entity 
+        gltf-model="url(models/dragon.glb)"
+        class="interactive"
+        boss-interactive="health: 5"
+        position="0 0 0"
+        scale="0.4 0.4 0.4"
+        rotation="0 0 0"
+        animation__idle="property: rotation; to: 0 360 0; dur: 20000; loop: true; easing: linear">
+        
+        <!-- Ominous red glow -->
+        <a-entity light="type: point; intensity: 1.2; color: #ff0000; distance: 3; decay: 2" position="0 1 0"></a-entity>
       </a-entity>
     </a-nft>
 
@@ -475,131 +348,6 @@
   </a-scene>
 
   <script>
-    // NFT Debug logging
-    window.addEventListener('arjs-nft-loaded', (e) => {
-      console.log('NFT Marker Loaded!', e.detail);
-      updateHUD('NFT Marker detected!');
-    });
-    
-    window.addEventListener('arjs-nft-init-data', (e) => {
-      console.log('NFT Init Data:', e.detail);
-    });
-
-    // Marker detection debug listeners for NFT elements
-    window.addEventListener('load', () => {
-      const markers = ['marker-bonfire','marker-sword','marker-boss'];
-      markers.forEach(id => {
-        const el = document.getElementById(id);
-        if (!el) {
-          console.warn('[MARKER-DBG] element not found:', id);
-          return;
-        }
-        el.addEventListener('markerFound', () => {
-          console.log('[MARKER-DBG] markerFound', id);
-          updateHUD(`Detected: ${id.replace('marker-','')}`);
-          showFallbacks(el);
-
-          // Show fallback primitives immediately so user sees something right away
-          const loader = el.querySelector('.model-loader');
-          const fallbacks = Array.from(el.children).filter(c => c !== loader);
-          fallbacks.forEach(f => {
-            try { setVisibleDeep(f, true); } catch (e) {}
-            try {
-              const s = f.getAttribute('scale');
-              if (!s) f.setAttribute('scale', '10 10 10');
-              else if (typeof s === 'string') {
-                // ensure not zero
-                const parts = s.trim().split(/\s+/).map(Number);
-                if (parts.length === 3 && parts.every(n => !isNaN(n))) {
-                  f.setAttribute('scale', `${Math.max(parts[0],0.001)} ${Math.max(parts[1],0.001)} ${Math.max(parts[2],0.001)}`);
-                }
-              }
-            } catch(e){}
-          });
-
-          // If loader exists, attempt to load/show GLB; hide fallbacks when model is ready
-          if (loader) {
-            const modelPath = loader.getAttribute('data-model');
-            try {
-              // set gltf-model if missing
-              if (modelPath && !loader.getAttribute('gltf-model')) loader.setAttribute('gltf-model', modelPath);
-            } catch(e) { console.warn('[MODEL-DBG] could not set gltf-model', e); }
-
-            // If model already present in object3D, swap immediately
-            try {
-              const hasModel = loader.getObject3D && (loader.getObject3D('mesh') || loader.getObject3D('scene'));
-              if (hasModel) {
-                loader.setAttribute('visible', 'true');
-                fallbacks.forEach(f => { try { f.setAttribute('visible','false'); } catch(e){} });
-              } else {
-                loader.setAttribute('visible', 'true');
-                const onLoaded = () => {
-                  console.log('[MODEL-DBG] model-loaded (on markerFound)', id, modelPath);
-                  try { fallbacks.forEach(f => f.setAttribute('visible','false')); } catch(e){}
-                  loader.removeEventListener('model-loaded', onLoaded);
-                };
-                loader.addEventListener('model-loaded', onLoaded);
-              }
-            } catch(e) { console.warn('[MODEL-DBG] loader check error', e); }
-          }
-
-          // Add temporary highlight: wireframe box + point light attached to marker root
-          if (!el._dbgHighlight) {
-            const box = document.createElement('a-box');
-            box.setAttribute('position', '0 0.5 0');
-            box.setAttribute('scale', '5 5 5');
-            box.setAttribute('material', 'color: #ffff00; wireframe: true; opacity: 0.9');
-            box.setAttribute('visible', 'true');
-
-            const light = document.createElement('a-entity');
-            light.setAttribute('light', 'type: point; color: #ffff66; intensity: 1.2; distance: 40; decay: 2');
-
-            el.appendChild(box);
-            el.appendChild(light);
-            el._dbgHighlight = { box, light };
-
-            // Remove highlight after 3 seconds
-            setTimeout(() => {
-              if (el._dbgHighlight) {
-                try { el.removeChild(el._dbgHighlight.box); } catch(e) {}
-                try { el.removeChild(el._dbgHighlight.light); } catch(e) {}
-                el._dbgHighlight = null;
-              }
-            }, 30000);
-          }
-
-          // briefly show souls counter as a visual HUD cue
-          const sc = document.getElementById('souls-counter');
-          sc.classList.add('show');
-          setTimeout(() => sc.classList.remove('show'), 20000);
-        });
-        el.addEventListener('markerLost', () => {
-          console.log('[MARKER-DBG] markerLost', id);
-          updateHUD('Marker lost. Scan again...');
-
-          // Revert any debug scaling and remove highlight immediately
-          const descendants = el.querySelectorAll('*');
-          descendants.forEach(d => {
-            try {
-              const s = d.getAttribute('scale');
-              if (s && typeof s === 'string') {
-                // naive attempt to shrink back by dividing by 1.05
-                const parts = s.trim().split(/\s+/).map(Number);
-                if (parts.length === 3) d.setAttribute('scale', `${parts[0]/1.05} ${parts[1]/1.05} ${parts[2]/1.05}`);
-              }
-            } catch(e) {}
-          });
-          hideFallbacks(el);
-
-          if (el._dbgHighlight) {
-            try { el.removeChild(el._dbgHighlight.box); } catch(e) {}
-            try { el.removeChild(el._dbgHighlight.light); } catch(e) {}
-            el._dbgHighlight = null;
-          }
-        });
-      });
-    });
-
     // Title screen
     document.getElementById('start-btn').addEventListener('click', () => {
       document.getElementById('title-screen').classList.add('hide');
@@ -607,145 +355,51 @@
     });
 
     // Bonfire ignite animation
-    document.getElementById('bonfire-group').addEventListener('ignite', () => {
-      const flame = document.getElementById('flame');
-      flame.setAttribute('material', 'emissiveIntensity', 2);
-      flame.setAttribute('material', 'opacity', 1);
-      flame.setAttribute('animation__grow', 'property: scale; to: 1.5 1.8 1.5; dur: 1000; easing: easeOutElastic');
-      
-      // Enhance light
-      flame.querySelector('[light]').setAttribute('light', 'intensity', 1.5);
+    document.querySelector('[bonfire-interactive]').addEventListener('ignite', (e) => {
+      const bonfire = e.target;
+      // Enhance lighting
+      const light = bonfire.querySelector('[light]');
+      if (light) {
+        light.setAttribute('light', 'intensity', 2);
+      }
+      // Scale up slightly
+      bonfire.setAttribute('animation__ignite', 'property: scale; to: 0.6 0.6 0.6; dur: 1000; easing: easeOutElastic');
     });
 
     // Sword claim animation
-    document.getElementById('sword-group').addEventListener('claim', () => {
-      const sword = document.querySelector('#sword-group .interactive');
-      sword.setAttribute('animation__claim', 'property: position; to: 0 1.5 0; dur: 2000; easing: easeInOutCubic');
+    document.querySelector('[sword-interactive]').addEventListener('claim', (e) => {
+      const sword = e.target;
+      sword.setAttribute('animation__claim', 'property: position; to: 0 2 0; dur: 2000; easing: easeInOutCubic');
       sword.setAttribute('animation__spin', 'property: rotation; to: 0 720 0; dur: 2000; easing: easeInOutCubic');
       setTimeout(() => {
-        sword.setAttribute('animation__fade', 'property: components.material.material.opacity; to: 0; dur: 500');
+        sword.setAttribute('visible', 'false');
       }, 2000);
     });
 
     // Boss damage animation
-    document.getElementById('boss-group').addEventListener('damage', () => {
-      const boss = document.querySelector('#boss-group .interactive');
-      boss.setAttribute('animation__damage', 'property: scale; to: 0.9 0.9 0.9; dur: 200; dir: alternate; loop: 2');
+    document.querySelector('[boss-interactive]').addEventListener('damage', (e) => {
+      const boss = e.target;
+      boss.setAttribute('animation__damage', 'property: scale; to: 0.35 0.35 0.35; dur: 200; dir: alternate; loop: 2');
       
-      // Flash red
-      const torso = boss.querySelector('a-cylinder');
-      torso.setAttribute('animation__flash', 'property: components.material.material.emissive; to: #ff0000; dur: 200; dir: alternate; loop: 2');
+      // Flash effect
+      const light = boss.querySelector('[light]');
+      if (light) {
+        light.setAttribute('animation__flash', 'property: light.intensity; to: 2; dur: 200; dir: alternate; loop: 2');
+      }
     });
 
     // Boss defeat animation
-    document.getElementById('boss-group').addEventListener('defeat', () => {
-      const boss = document.getElementById('boss-group');
-      boss.setAttribute('animation__fall', 'property: position; to: 0 -0.5 0; dur: 2000; easing: easeInCubic');
+    document.querySelector('[boss-interactive]').addEventListener('defeat', (e) => {
+      const boss = e.target;
+      boss.setAttribute('animation__fall', 'property: position; to: 0 -1 0; dur: 2000; easing: easeInCubic');
       boss.setAttribute('animation__dissolve', 'property: scale; to: 0 0 0; dur: 2000; easing: easeInCubic');
-      
-      // Explosion effect
-      const particles = boss.parentEl.querySelector('[dark-particles]');
-      particles.setAttribute('animation__explode', 'property: scale; to: 3 3 3; dur: 1000');
     });
 
-    // --- GLB model loader with primitive fallback ---
-    (function attachModelLoaders(){
-      const groups = [
-        { id: 'bonfire-group', modelAttr: './models/bonfire.glb' },
-        { id: 'sword-group', modelAttr: './models/sword.glb' },
-        { id: 'boss-group', modelAttr: './models/dragon.glb' }
-      ];
-
-      groups.forEach(g => {
-        const group = document.getElementById(g.id);
-        if (!group) return;
-
-        // find loader child we inserted
-        const loader = group.querySelector('.model-loader');
-        // hide fallback primitives until loader resolves
-        const fallbacks = Array.from(group.children).filter(c => c !== loader);
-        fallbacks.forEach(f => {
-          f.setAttribute('visible', 'false');
-          f.setAttribute('data-fallback', 'true');
-          setVisibleDeep(f, false);
-        });
-
-        if (!loader) {
-          // No loader placeholder; show fallbacks
-          fallbacks.forEach(f => {
-            f.setAttribute('visible', 'true');
-            setVisibleDeep(f, true);
-          });
-          return;
-        }
-
-        const modelPath = loader.getAttribute('data-model') || g.modelAttr;
-        if (!modelPath) {
-          fallbacks.forEach(f => {
-            f.setAttribute('visible', 'true');
-            f.setAttribute('data-fallback', 'true');
-            setVisibleDeep(f, true);
-          });
-          return;
-        }
-
-        // Attempt to set gltf-model and listen for events
-        loader.setAttribute('gltf-model', modelPath);
-        loader.addEventListener('model-loaded', (ev) => {
-          console.log('[MODEL-DBG] model-loaded', group.id, modelPath, ev && ev.detail);
-          // show model loader and hide fallbacks
-          loader.setAttribute('visible', 'true');
-          try {
-            const obj = loader.getObject3D('mesh') || loader.getObject3D('scene');
-            if (obj) {
-              // Make sure the object is visible and reasonably scaled/positioned
-              obj.visible = true;
-              // Prefer a slightly larger scale so small models are noticeable
-              if (obj.scale) obj.scale.set(Math.max(obj.scale.x,1), Math.max(obj.scale.y,1), Math.max(obj.scale.z,1));
-              // Position at origin of marker
-              obj.position.set(0,0,0);
-
-              // Traverse meshes to boost emissive / double-side to avoid invisible materials
-              obj.traverse(node => {
-                if (node.isMesh && node.material) {
-                  try {
-                    // Ensure material is visible; add emissive highlight if possible
-                    if (node.material.emissive) {
-                      node.material.emissive.setHex && node.material.emissive.setHex(0x444444);
-                    }
-                    node.material.side = (window.THREE && window.THREE.DoubleSide) ? window.THREE.DoubleSide : node.material.side;
-                    node.material.needsUpdate = true;
-                  } catch(e) {}
-                }
-              });
-            }
-          } catch(e) { console.warn('[MODEL-DBG] error adjusting model object3D', e); }
-
-          fallbacks.forEach(f => f.setAttribute('visible', 'false'));
-          // small scale/rotation fix to align with previous primitives
-          try { loader.setAttribute('scale', '1 1 1'); } catch(e){}
-        });
-        loader.addEventListener('model-error', (ev) => {
-          console.warn('[MODEL-DBG] model-error', group.id, modelPath, ev && ev.detail);
-          // show fallback primitives
-          loader.setAttribute('visible', 'false');
-          fallbacks.forEach(f => f.setAttribute('visible', 'true'));
-        });
-
-        // Timeout: if neither loaded nor errored after 4s, show fallback
-        setTimeout(() => {
-          const hasMesh = loader.getObject3D && (loader.getObject3D('mesh') || loader.getObject3D('scene'));
-          if (!hasMesh) {
-            console.warn('[MODEL-DBG] model load timeout, using fallback for', group.id);
-            loader.setAttribute('visible', 'false');
-            fallbacks.forEach(f => {
-              f.setAttribute('visible', 'true');
-              setVisibleDeep(f, true);
-            });
-          }
-        }, 4000);
-      });
-    })();
+    // NFT Debug logging
+    window.addEventListener('arjs-nft-loaded', (e) => {
+      console.log('NFT Marker Loaded!', e.detail);
+      updateHUD('Marker detected! Look at the object.');
+    });
   </script>
 </body>
 </html>
