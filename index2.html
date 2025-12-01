@@ -506,7 +506,7 @@
             try { setVisibleDeep(f, true); } catch (e) {}
             try {
               const s = f.getAttribute('scale');
-              if (!s) f.setAttribute('scale', '1 1 1');
+              if (!s) f.setAttribute('scale', '10 10 10');
               else if (typeof s === 'string') {
                 // ensure not zero
                 const parts = s.trim().split(/\s+/).map(Number);
@@ -547,7 +547,7 @@
           if (!el._dbgHighlight) {
             const box = document.createElement('a-box');
             box.setAttribute('position', '0 0.5 0');
-            box.setAttribute('scale', '5 5 3');
+            box.setAttribute('scale', '5 5 5');
             box.setAttribute('material', 'color: #ffff00; wireframe: true; opacity: 0.9');
             box.setAttribute('visible', 'true');
 
