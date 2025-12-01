@@ -7,8 +7,8 @@
 
   <!-- A-Frame -->
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-  <!-- AR.js for A-Frame (marker-based AR) -->
-  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
+  <!-- AR.js for A-Frame with NFT image tracking support -->
+  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar-nft.js"></script>
 
   <style>
     body { margin:0; overflow:hidden; background: #000; }
@@ -333,8 +333,15 @@
                 material="color: #1a1a1a; opacity: 0.5; transparent: true"></a-circle>
     </a-nft>
 
-    <!-- MARKER 2: LEGENDARY SWORD (Kanji) -->
-    <a-marker preset="kanji" id="marker-sword">
+    <!-- MARKER 2: LEGENDARY SWORD (NFT image target) -->
+    <a-nft
+      type="nft"
+      url="./sword"
+      smooth="true"
+      smoothCount="10"
+      smoothTolerance="0.01"
+      smoothThreshold="5"
+      id="marker-sword">
       <a-entity dark-particles></a-entity>
       
       <!-- Sword pedestal -->
@@ -437,7 +444,7 @@
                 material="color: #8b0000; emissive: #8b0000; emissiveIntensity: 1; transparent: true; opacity: 0.4; side: double"
                 animation="property: rotation; to: -90 -360 0; dur: 8000; loop: true; easing: linear"></a-ring>
       </a-entity>
-    </a-marker>
+    </a-nft>
 
     <a-entity camera></a-entity>
   </a-scene>
