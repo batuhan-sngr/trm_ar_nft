@@ -483,12 +483,49 @@
           console.log('[MARKER-DBG] markerFound', id);
           updateHUD(`Detected: ${id.replace('marker-','')}`);
 
-          // Force descendants visible and slightly scale up as a visual cue
-          const descendants = el.querySelectorAll('*');
-          descendants.forEach(d => {
-            try { d.setAttribute('visible', true); } catch (e) {}
-            try { const s = d.getAttribute('scale') || {x:1,y:1,z:1}; d.setAttribute('scale', `${(s.x||1)*1.05} ${(s.y||1)*1.05} ${(s.z||1)*1.05}`); } catch(e) {}
+          // Show fallback primitives immediately so user sees something right away
+          const loader = el.querySelector('.model-loader');
+          const fallbacks = Array.from(el.children).filter(c => c !== loader);
+          fallbacks.forEach(f => {
+            try { f.setAttribute('visible', 'true'); } catch (e) {}
+            try {
+              const s = f.getAttribute('scale');
+              if (!s) f.setAttribute('scale', '1 1 1');
+              else if (typeof s === 'string') {
+                // ensure not zero
+                const parts = s.trim().split(/\s+/).map(Number);
+                if (parts.length === 3 && parts.every(n => !isNaN(n))) {
+                  f.setAttribute('scale', `${Math.max(parts[0],0.001)} ${Math.max(parts[1],0.001)} ${Math.max(parts[2],0.001)}`);
+                }
+              }
+            } catch(e){}
           });
+
+          // If loader exists, attempt to load/show GLB; hide fallbacks when model is ready
+          if (loader) {
+            const modelPath = loader.getAttribute('data-model');
+            try {
+              // set gltf-model if missing
+              if (modelPath && !loader.getAttribute('gltf-model')) loader.setAttribute('gltf-model', modelPath);
+            } catch(e) { console.warn('[MODEL-DBG] could not set gltf-model', e); }
+
+            // If model already present in object3D, swap immediately
+            try {
+              const hasModel = loader.getObject3D && (loader.getObject3D('mesh') || loader.getObject3D('scene'));
+              if (hasModel) {
+                loader.setAttribute('visible', 'true');
+                fallbacks.forEach(f => { try { f.setAttribute('visible','false'); } catch(e){} });
+              } else {
+                loader.setAttribute('visible', 'true');
+                const onLoaded = () => {
+                  console.log('[MODEL-DBG] model-loaded (on markerFound)', id, modelPath);
+                  try { fallbacks.forEach(f => f.setAttribute('visible','false')); } catch(e){}
+                  loader.removeEventListener('model-loaded', onLoaded);
+                };
+                loader.addEventListener('model-loaded', onLoaded);
+              }
+            } catch(e) { console.warn('[MODEL-DBG] loader check error', e); }
+          }
 
           // Add temporary highlight: wireframe box + point light attached to marker root
           if (!el._dbgHighlight) {
