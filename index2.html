@@ -7,43 +7,8 @@
 
   <!-- A-Frame -->
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-  <!-- AR.js for A-Frame with NFT image tracking support (use raw.githack CDN for correct MIME) -->
-  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
-  <script>
-    // Verify AR.js NFT build loaded; if not, attempt a fallback and show status
-    (function verifyARjs(){
-      function showStatus(msg, isError){
-        console[isError? 'error':'log']('[AR-LOAD] ' + msg);
-      }
-
-      function hasNFT() {
-        try {
-          return !!(window.AFRAME && (AFRAME.components['nft'] || AFRAME.components['marker'] || document.createElement('a-nft')));
-        } catch(e) { return false; }
-      }
-
-      if (hasNFT()) {
-        showStatus('AR.js NFT build appears loaded.');
-        return;
-      }
-
-      showStatus('AR.js NFT not detected — attempting fallback load from jsDelivr...', true);
-      const s = document.createElement('script');
-      s.src = 'https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar-nft.js';
-      s.onload = () => {
-        if (hasNFT()) showStatus('Fallback loaded OK.');
-        else showStatus('Fallback loaded but NFT component still missing.', true);
-      };
-      s.onerror = () => {
-        showStatus('Fallback load failed — AR.js NFT unavailable.', true);
-        const el = document.createElement('div');
-        el.innerText = 'AR.js NFT load failed — check console.';
-        el.style.position = 'fixed'; el.style.left = '10px'; el.style.bottom = '10px'; el.style.zIndex = 9999; el.style.background = 'rgba(0,0,0,0.6)'; el.style.color = '#f88'; el.style.padding = '8px';
-        document.body.appendChild(el);
-      };
-      document.head.appendChild(s);
-    })();
-  </script>
+  <!-- AR.js for A-Frame (marker-based AR) -->
+  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
 
   <style>
     body { margin:0; overflow:hidden; background: #000; }
@@ -314,8 +279,9 @@
     embedded
     renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true"
     xr-mode-ui="enabled: false"
-    arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: true"
-    vr-mode-ui="enabled: false">
+    arjs="sourceType: webcam; debugUIEnabled: true; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+    vr-mode-ui="enabled: false"
+    loading-screen="enabled: false">
 
     <!-- Cursor for interaction -->
     <a-entity cursor="rayOrigin: mouse; fuse: true; fuseTimeout: 500" 
@@ -330,14 +296,11 @@
     <a-entity light="type: ambient; intensity: 0.3; color: #1a1a2e"></a-entity>
     <a-entity light="type: directional; intensity: 0.4; color: #d4c5a9" position="2 3 1"></a-entity>
 
-    <!-- MARKER 1: BONFIRE (NFT) -->
-    <a-nft
-      type="nft"
-      url="./Bonfire_Header"
+    <!-- MARKER 1: BONFIRE (Pattern) -->
+    <a-marker
+      type="pattern"
+      url="./Bonfire_Header.patt"
       smooth="true"
-      smoothCount="10"
-      smoothTolerance="0.01"
-      smoothThreshold="5"
       id="marker-bonfire">
       <a-entity dark-particles></a-entity>
       
@@ -366,17 +329,10 @@
       <!-- Ground circle -->
       <a-circle position="0 0.01 0" radius="0.8" rotation="-90 0 0" 
                 material="color: #1a1a1a; opacity: 0.5; transparent: true"></a-circle>
-    </a-nft>
+    </a-marker>
 
-    <!-- MARKER 2: LEGENDARY SWORD (NFT image target) -->
-    <a-nft
-      type="nft"
-      url="./sword"
-      smooth="true"
-      smoothCount="10"
-      smoothTolerance="0.01"
-      smoothThreshold="5"
-      id="marker-sword">
+    <!-- MARKER 2: LEGENDARY SWORD (Kanji) -->
+    <a-marker preset="kanji" id="marker-sword">
       <a-entity dark-particles></a-entity>
       
       <!-- Sword pedestal -->
@@ -418,16 +374,13 @@
                 material="color: #4da6ff; emissive: #4da6ff; emissiveIntensity: 0.8; transparent: true; opacity: 0.6"
                 animation="property: rotation; to: -90 360 0; dur: 20000; loop: true; easing: linear"></a-ring>
       </a-entity>
-    </a-nft>
+    </a-marker>
 
-    <!-- MARKER 3: BOSS GUARDIAN (NFT) -->
-    <a-nft
-      type="nft"
-      url="./dragon"
+    <!-- MARKER 3: BOSS GUARDIAN (Pattern) -->
+    <a-marker
+      type="pattern"
+      url="./dragon.patt"
       smooth="true"
-      smoothCount="10"
-      smoothTolerance="0.01"
-      smoothThreshold="5"
       id="marker-boss">
       <a-entity dark-particles></a-entity>
       
@@ -479,49 +432,21 @@
                 material="color: #8b0000; emissive: #8b0000; emissiveIntensity: 1; transparent: true; opacity: 0.4; side: double"
                 animation="property: rotation; to: -90 -360 0; dur: 8000; loop: true; easing: linear"></a-ring>
       </a-entity>
-    </a-nft>
+    </a-marker>
 
     <a-entity camera></a-entity>
   </a-scene>
 
   <script>
-    // --- Diagnostic: check webcam access and show a small preview video ---
-    (function cameraDiagnostics(){
-      const vid = document.createElement('video');
-      vid.style.position = 'fixed';
-      vid.style.right = '10px';
-      vid.style.top = '10px';
-      vid.style.width = '160px';
-      vid.style.height = '120px';
-      vid.style.zIndex = 9999;
-      vid.style.border = '2px solid rgba(212,197,169,0.6)';
-      vid.autoplay = true;
-      vid.muted = true;
-      vid.playsInline = true;
-      document.body.appendChild(vid);
-
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        console.error('No getUserMedia available in this browser.');
-        const e = document.createElement('div');
-        e.innerText = 'Camera unavailable';
-        e.style.position = 'fixed'; e.style.left = '10px'; e.style.top = '10px'; e.style.zIndex = 9999; e.style.color = '#f88';
-        document.body.appendChild(e);
-        return;
-      }
-
-      navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => {
-          vid.srcObject = stream;
-          console.log('Camera stream started for diagnostics.');
-        })
-        .catch(err => {
-          console.error('Camera access denied or error:', err);
-          const msg = document.createElement('div');
-          msg.innerText = 'Camera denied: ' + (err && err.name ? err.name : err);
-          msg.style.position = 'fixed'; msg.style.left = '10px'; msg.style.top = '10px'; msg.style.zIndex = 9999; msg.style.color = '#f88';
-          document.body.appendChild(msg);
-        });
-    })();
+    // NFT Debug logging
+    window.addEventListener('arjs-nft-loaded', (e) => {
+      console.log('NFT Marker Loaded!', e.detail);
+      updateHUD('NFT Marker detected!');
+    });
+    
+    window.addEventListener('arjs-nft-init-data', (e) => {
+      console.log('NFT Init Data:', e.detail);
+    });
 
     // Title screen
     document.getElementById('start-btn').addEventListener('click', () => {
@@ -569,30 +494,6 @@
       // Explosion effect
       const particles = boss.parentEl.querySelector('[dark-particles]');
       particles.setAttribute('animation__explode', 'property: scale; to: 3 3 3; dur: 1000');
-    });
-
-    // --- Marker detection debug listeners ---
-    window.addEventListener('load', () => {
-      const markers = ['marker-bonfire','marker-sword','marker-boss'];
-      markers.forEach(id => {
-        const el = document.getElementById(id);
-        if (!el) {
-          console.warn('[MARKER-DBG] element not found:', id);
-          return;
-        }
-        el.addEventListener('markerFound', () => {
-          console.log('[MARKER-DBG] markerFound', id);
-          updateHUD(`Detected: ${id.replace('marker-','')}`);
-          // briefly show souls counter as a visual cue
-          const sc = document.getElementById('souls-counter');
-          sc.classList.add('show');
-          setTimeout(() => sc.classList.remove('show'), 2000);
-        });
-        el.addEventListener('markerLost', () => {
-          console.log('[MARKER-DBG] markerLost', id);
-          updateHUD('Marker lost. Scan again...');
-        });
-      });
     });
   </script>
 </body>
