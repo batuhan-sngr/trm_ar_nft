@@ -476,6 +476,40 @@
         el.addEventListener('markerFound', () => {
           console.log('[MARKER-DBG] markerFound', id);
           updateHUD(`Detected: ${id.replace('marker-','')}`);
+
+          // Force descendants visible and slightly scale up as a visual cue
+          const descendants = el.querySelectorAll('*');
+          descendants.forEach(d => {
+            try { d.setAttribute('visible', true); } catch (e) {}
+            try { const s = d.getAttribute('scale') || {x:1,y:1,z:1}; d.setAttribute('scale', `${(s.x||1)*1.05} ${(s.y||1)*1.05} ${(s.z||1)*1.05}`); } catch(e) {}
+          });
+
+          // Add temporary highlight: wireframe box + point light attached to marker root
+          if (!el._dbgHighlight) {
+            const box = document.createElement('a-box');
+            box.setAttribute('position', '0 0.5 0');
+            box.setAttribute('scale', '1 1 1');
+            box.setAttribute('material', 'color: #ffff00; wireframe: true; opacity: 0.9');
+            box.setAttribute('visible', 'true');
+
+            const light = document.createElement('a-entity');
+            light.setAttribute('light', 'type: point; color: #ffff66; intensity: 1.2; distance: 4; decay: 2');
+
+            el.appendChild(box);
+            el.appendChild(light);
+            el._dbgHighlight = { box, light };
+
+            // Remove highlight after 3 seconds
+            setTimeout(() => {
+              if (el._dbgHighlight) {
+                try { el.removeChild(el._dbgHighlight.box); } catch(e) {}
+                try { el.removeChild(el._dbgHighlight.light); } catch(e) {}
+                el._dbgHighlight = null;
+              }
+            }, 3000);
+          }
+
+          // briefly show souls counter as a visual HUD cue
           const sc = document.getElementById('souls-counter');
           sc.classList.add('show');
           setTimeout(() => sc.classList.remove('show'), 2000);
@@ -483,6 +517,25 @@
         el.addEventListener('markerLost', () => {
           console.log('[MARKER-DBG] markerLost', id);
           updateHUD('Marker lost. Scan again...');
+
+          // Revert any debug scaling and remove highlight immediately
+          const descendants = el.querySelectorAll('*');
+          descendants.forEach(d => {
+            try {
+              const s = d.getAttribute('scale');
+              if (s && typeof s === 'string') {
+                // naive attempt to shrink back by dividing by 1.05
+                const parts = s.trim().split(/\s+/).map(Number);
+                if (parts.length === 3) d.setAttribute('scale', `${parts[0]/1.05} ${parts[1]/1.05} ${parts[2]/1.05}`);
+              }
+            } catch(e) {}
+          });
+
+          if (el._dbgHighlight) {
+            try { el.removeChild(el._dbgHighlight.box); } catch(e) {}
+            try { el.removeChild(el._dbgHighlight.light); } catch(e) {}
+            el._dbgHighlight = null;
+          }
         });
       });
     });
