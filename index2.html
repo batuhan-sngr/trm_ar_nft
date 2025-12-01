@@ -663,10 +663,36 @@
 
         // Attempt to set gltf-model and listen for events
         loader.setAttribute('gltf-model', modelPath);
-        loader.addEventListener('model-loaded', () => {
-          console.log('[MODEL-DBG] model-loaded', group.id, modelPath);
+        loader.addEventListener('model-loaded', (ev) => {
+          console.log('[MODEL-DBG] model-loaded', group.id, modelPath, ev && ev.detail);
           // show model loader and hide fallbacks
           loader.setAttribute('visible', 'true');
+          try {
+            const obj = loader.getObject3D('mesh') || loader.getObject3D('scene');
+            if (obj) {
+              // Make sure the object is visible and reasonably scaled/positioned
+              obj.visible = true;
+              // Prefer a slightly larger scale so small models are noticeable
+              if (obj.scale) obj.scale.set(Math.max(obj.scale.x,1), Math.max(obj.scale.y,1), Math.max(obj.scale.z,1));
+              // Position at origin of marker
+              obj.position.set(0,0,0);
+
+              // Traverse meshes to boost emissive / double-side to avoid invisible materials
+              obj.traverse(node => {
+                if (node.isMesh && node.material) {
+                  try {
+                    // Ensure material is visible; add emissive highlight if possible
+                    if (node.material.emissive) {
+                      node.material.emissive.setHex && node.material.emissive.setHex(0x444444);
+                    }
+                    node.material.side = (window.THREE && window.THREE.DoubleSide) ? window.THREE.DoubleSide : node.material.side;
+                    node.material.needsUpdate = true;
+                  } catch(e) {}
+                }
+              });
+            }
+          } catch(e) { console.warn('[MODEL-DBG] error adjusting model object3D', e); }
+
           fallbacks.forEach(f => f.setAttribute('visible', 'false'));
           // small scale/rotation fix to align with previous primitives
           try { loader.setAttribute('scale', '1 1 1'); } catch(e){}
