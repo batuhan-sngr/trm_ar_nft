@@ -7,8 +7,8 @@
 
   <!-- A-Frame -->
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-  <!-- AR.js for A-Frame with NFT image tracking support -->
-  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar-nft.js"></script>
+  <!-- AR.js for A-Frame with NFT image tracking support (use raw.githack CDN for correct MIME) -->
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
 
   <style>
     body { margin:0; overflow:hidden; background: #000; }
@@ -279,7 +279,7 @@
     embedded
     renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true"
     xr-mode-ui="enabled: false"
-    arjs="sourceType: webcam; detectionMode: mono_and_matrix; debugUIEnabled: true"
+    arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: true"
     vr-mode-ui="enabled: false">
 
     <!-- Cursor for interaction -->
@@ -450,6 +450,44 @@
   </a-scene>
 
   <script>
+    // --- Diagnostic: check webcam access and show a small preview video ---
+    (function cameraDiagnostics(){
+      const vid = document.createElement('video');
+      vid.style.position = 'fixed';
+      vid.style.right = '10px';
+      vid.style.top = '10px';
+      vid.style.width = '160px';
+      vid.style.height = '120px';
+      vid.style.zIndex = 9999;
+      vid.style.border = '2px solid rgba(212,197,169,0.6)';
+      vid.autoplay = true;
+      vid.muted = true;
+      vid.playsInline = true;
+      document.body.appendChild(vid);
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        console.error('No getUserMedia available in this browser.');
+        const e = document.createElement('div');
+        e.innerText = 'Camera unavailable';
+        e.style.position = 'fixed'; e.style.left = '10px'; e.style.top = '10px'; e.style.zIndex = 9999; e.style.color = '#f88';
+        document.body.appendChild(e);
+        return;
+      }
+
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+          vid.srcObject = stream;
+          console.log('Camera stream started for diagnostics.');
+        })
+        .catch(err => {
+          console.error('Camera access denied or error:', err);
+          const msg = document.createElement('div');
+          msg.innerText = 'Camera denied: ' + (err && err.name ? err.name : err);
+          msg.style.position = 'fixed'; msg.style.left = '10px'; msg.style.top = '10px'; msg.style.zIndex = 9999; msg.style.color = '#f88';
+          document.body.appendChild(msg);
+        });
+    })();
+
     // Title screen
     document.getElementById('start-btn').addEventListener('click', () => {
       document.getElementById('title-screen').classList.add('hide');
